@@ -26,7 +26,8 @@ type
       constructor Create( MainModule : TMainModule );
       destructor Destroy(); override;
 
-      procedure Execute( Command  : ICommand );
+      function Execute( Command  : ICommand ) : Boolean; overload;
+      function Execute( Command  : IReadCommand ) : Boolean; overload;
 
       procedure Open( Directory : String );
       function Read( FileName : String ) : TBytes;
@@ -79,20 +80,46 @@ begin
   Directory_ := Directory;
 end;
 
-procedure TFileModel.Execute( Command: ICommand );
+function TFileModel.Execute( Command: ICommand ) : Boolean;
 begin
-{
-  if Supports( Command, ITestCommand ) then
-    ShowMessage( ( Command as ITestCommand ).GetMessage() )
+  Result := false;
+  if Supports( Command, IReadCommand ) then
+    Result := Execute( Command as IReadCommand )
   else
     MessageDlg( 'Команда не поддерживается!', mtError, [mbOK], 0 );
-}
+end;
+
+function TFileModel.Execute( Command  : IReadCommand ) : Boolean;
+begin
+  Result := false;
+  try
+    Command.Data := Read( Command.Argument );
+    Result := true;
+  except
+    on E : Exception do
+      MessageDlg( E.Message,  mtError, [mbOK], 0 );
+  end;
 end;
 
 function TFileModel.Read( FileName : String ) : TBytes;
+var
+  FileStream : TFileStream;
 begin
-  // чтение содержимого файла
   Result := NIL;
+  FileStream := NIL;
+  try
+    FileStream := TFileStream.Create( Directory_ + '\' + FileName, fmOpenRead  );
+    try
+      SetLength( Result, FileStream.Size );
+      FileStream.ReadBuffer( Result[0], FileStream.Size );
+    except
+      Result := NIL;
+      raise;
+    end;
+  finally
+    if Assigned( FileStream ) then
+      FileStream.Free;
+  end;
 end;
 
 function TFileModel.ReadSign( FileName : String ) : TSignContext;

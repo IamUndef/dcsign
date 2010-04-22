@@ -4,15 +4,24 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, Grids, uIFileModel, uIModule;
+  Dialogs, StdCtrls, Grids, ComCtrls, ImgList, Menus, ActnList, uIFileModel,
+  uIModule;
 
 type
   TMainModule = class(TForm)
     gbMain: TGroupBox;
-    sgFiles: TStringGrid;
+    lvFiles: TListView;
+    ilMain: TImageList;
+    mmMain: TMainMenu;
+    miFile: TMenuItem;
+    miSign: TMenuItem;
+    miSetSign: TMenuItem;
+    ActionList1: TActionList;
+    aSetSign: TAction;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure aSetSignExecute(Sender: TObject);
     
   private
     const
@@ -73,15 +82,27 @@ begin
   FileModel.Open( 'c:\' );
 end;
 
+procedure TMainModule.aSetSignExecute(Sender: TObject);
+begin
+  if ( Assigned( SetSign ) and ( lvFiles.ItemIndex <> -1 ) ) then
+    SetSign.Execute( TSignCommand.Create(
+      lvFiles.Items[lvFiles.ItemIndex].SubItems[0] ) as ICommand );
+end;
+
 procedure TMainModule.Refresh( FilesInfo : TStringList );
 var
   i : Integer;
+  Item : TListItem;
 begin
-  sgFiles.RowCount := FilesInfo.Count;
+  lvFiles.Clear;
   for i := 0 to FilesInfo.Count - 1 do
   begin
-    sgFiles.Cells[0, i] := IntToStr( Integer( FilesInfo.Objects[i] ) );
-    sgFiles.Cells[1, i] := FilesInfo.Strings[i];
+    Item := lvFiles.Items.Add();
+    if Assigned( FilesInfo.Objects[i] ) then
+      Item.ImageIndex := 0
+    else
+      Item.ImageIndex := -1;
+    Item.SubItems.Add( FilesInfo.Strings[i] );
   end;
 end;
 
