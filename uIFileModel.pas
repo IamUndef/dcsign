@@ -2,17 +2,17 @@ unit uIFileModel;
 
 interface
 
-uses SysUtils, uSignContext;
+uses SysUtils, uISignContext;
 
 type
 
   IFileModel = interface( IInterface )
     ['{32EB925C-F9C4-44E9-ABC0-F56E2310D01B}']
 
-    procedure Open( Directory : String );
-    function Read( FileName : String ) : TBytes;
-    function ReadSign( FileName : String ) : TSignContext;
-    procedure DeleteSign( FileName : String );
+    procedure Open( const Directory : String );
+    function Read( const FileName : String ) : TBytes;
+    function ReadSign( const FileName : String ) : ISignContext;
+    procedure DeleteSign( const FileName : String );
 
   end;
 

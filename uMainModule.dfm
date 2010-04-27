@@ -1,7 +1,7 @@
 object MainModule: TMainModule
   Left = 0
   Top = 0
-  Caption = #1055#1086#1076#1087#1080#1089#1100' '#1076#1086#1082#1091#1084#1077#1085#1090#1086#1074' - '#1043#1059#1047' '#171#1047#1072#1073#1050#1044#1062#187' - beta '
+  Caption = #1055#1086#1076#1087#1080#1089#1100' '#1076#1086#1082#1091#1084#1077#1085#1090#1086#1074' - '#1043#1059#1047' '#171#1047#1072#1073#1050#1044#1062#187' - alpha '
   ClientHeight = 342
   ClientWidth = 484
   Color = clBtnFace
@@ -33,10 +33,6 @@ object MainModule: TMainModule
     Font.Style = []
     ParentFont = False
     TabOrder = 0
-    ExplicitLeft = 0
-    ExplicitTop = 5
-    ExplicitWidth = 408
-    ExplicitHeight = 272
     object lvFiles: TListView
       AlignWithMargins = True
       Left = 5
@@ -65,15 +61,14 @@ object MainModule: TMainModule
       TabOrder = 0
       ViewStyle = vsReport
       ExplicitLeft = 7
-      ExplicitTop = 20
-      ExplicitHeight = 313
+      ExplicitTop = 23
     end
   end
   object ilMain: TImageList
     Left = 440
     Top = 56
     Bitmap = {
-      494C010102000800080010001000FFFFFFFFFF00FFFFFFFFFFFFFFFF424D3600
+      494C010102000800140010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -209,7 +204,8 @@ object MainModule: TMainModule
       FFC1FFE000000000FF81FFC000000000FE01FF0100000000F007FC0100000000
       C00FC00300000000801F800F00000000803F800F00000000803F003F00000000
       803F003F00000000803F003F00000000807F003F00000000E0FF803F00000000
-      FFFF807F00000000FFFFE0FF00000000}
+      FFFF807F00000000FFFFE0FF0000000000000000000000000000000000000000
+      000000000000}
   end
   object mmMain: TMainMenu
     Images = ilMain
@@ -225,7 +221,7 @@ object MainModule: TMainModule
       end
     end
   end
-  object ActionList1: TActionList
+  object alMain: TActionList
     Left = 408
     Top = 56
     object aSetSign: TAction

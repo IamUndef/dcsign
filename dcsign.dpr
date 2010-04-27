@@ -3,11 +3,14 @@ program dcsign;
 uses
   Forms,
   uMainModule in 'uMainModule.pas' {MainModule},
-  uIModule in 'uIModule.pas',
-  uCommands in 'uCommands.pas',
   uFileModel in 'uFileModel.pas',
-  uSignContext in 'uSignContext.pas',
-  uIFileModel in 'uIFileModel.pas';
+  uIFileModel in 'uIFileModel.pas',
+  uICommands in 'common\uICommands.pas',
+  uIModule in 'common\uIModule.pas',
+  uSignContext in 'common\uSignContext.pas',
+  uCommands in 'uCommands.pas',
+  uSimpleCommand in 'common\uSimpleCommand.pas',
+  uISignContext in 'common\uISignContext.pas';
 
 {$R *.res}
 

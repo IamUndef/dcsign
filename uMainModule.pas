@@ -16,7 +16,7 @@ type
     miFile: TMenuItem;
     miSign: TMenuItem;
     miSetSign: TMenuItem;
-    ActionList1: TActionList;
+    alMain: TActionList;
     aSetSign: TAction;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -33,7 +33,8 @@ type
     SetSign : IModule;
 
   public
-    procedure Refresh( FilesInfo : TStringList );
+    procedure Refresh( FilesInfo : TStringList ); overload;
+    procedure Refresh( FileName : String ); overload;
 
   end;
 
@@ -49,7 +50,8 @@ uses uFileModel, uICommands, uCommands;
 procedure TMainModule.FormCreate(Sender: TObject);
 
 type
-  TGetInstance = function ( FileModel : IModule ) : IModule;
+  TGetInstance = function ( const FileModel : IModule ) : IModule;
+  
 var
   SetSignDLL : THandle;
   GetInstance : TGetInstance;
@@ -103,6 +105,21 @@ begin
     else
       Item.ImageIndex := -1;
     Item.SubItems.Add( FilesInfo.Strings[i] );
+  end;
+end;
+
+procedure TMainModule.Refresh( FileName: String );
+var
+  i : Integer;
+begin
+  for i := 0 to lvFiles.Items.Count - 1 do
+  begin
+    if ( lvFiles.Items[i].SubItems.Strings[0] = FileName ) then
+    begin
+      lvFiles.Items[i].ImageIndex := 0;
+      Break;
+    end;
+    lvFiles.Invalidate;
   end;
 end;
 

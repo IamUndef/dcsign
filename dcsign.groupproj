@@ -1,0 +1,44 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectGuid>{6bc0e2ce-30ba-4794-9317-d80ede9bcb69}</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Projects Include="dcsetsign\dcsetsign.dproj" />
+    <Projects Include="dcsign.dproj" />
+  </ItemGroup>
+  <ProjectExtensions>
+    <Borland.Personality>Default.Personality</Borland.Personality>
+    <Borland.ProjectType />
+    <BorlandProject>
+  <BorlandProject xmlns=""> <Default.Personality> </Default.Personality> </BorlandProject></BorlandProject>
+  </ProjectExtensions>
+  <Target Name="dcsign">
+    <MSBuild Projects="dcsign.dproj" Targets="" />
+  </Target>
+  <Target Name="dcsign:Clean">
+    <MSBuild Projects="dcsign.dproj" Targets="Clean" />
+  </Target>
+  <Target Name="dcsign:Make">
+    <MSBuild Projects="dcsign.dproj" Targets="Make" />
+  </Target>
+  <Target Name="dcsetsign">
+    <MSBuild Projects="dcsetsign\dcsetsign.dproj" Targets="" />
+  </Target>
+  <Target Name="dcsetsign:Clean">
+    <MSBuild Projects="dcsetsign\dcsetsign.dproj" Targets="Clean" />
+  </Target>
+  <Target Name="dcsetsign:Make">
+    <MSBuild Projects="dcsetsign\dcsetsign.dproj" Targets="Make" />
+  </Target>
+  <Target Name="Build">
+    <CallTarget Targets="dcsign;dcsetsign" />
+  </Target>
+  <Target Name="Clean">
+    <CallTarget Targets="dcsign:Clean;dcsetsign:Clean" />
+  </Target>
+  <Target Name="Make">
+    <CallTarget Targets="dcsign:Make;dcsetsign:Make" />
+  </Target>
+  <Import Condition="Exists('$(MSBuildBinPath)\Borland.Group.Targets')" Project="$(MSBuildBinPath)\Borland.Group.Targets" />
+</Project>
