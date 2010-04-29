@@ -11,6 +11,8 @@ library dcsetsign;
   using PChar or ShortString parameters. }
 
 uses
+  FastMM4 in '..\fastmm\FastMM4.pas',
+  FastMM4Messages in '..\fastmm\FastMM4Messages.pas',
   SysUtils,
   Classes,
   uSetSign in 'uSetSign.pas',

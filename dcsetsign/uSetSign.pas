@@ -35,7 +35,7 @@ type
         RightBuf : Pointer; RightBufSize : Integer ) : TBytes;
 
       function SingleSign( const Command : IReadCommand ) : Boolean;
-      // MultySign
+      // MultiSign
       
     public
       constructor Create( const FileModel : IModule );
@@ -169,7 +169,7 @@ begin
     CertCloseStore( hStore, 0 );
   end;
   if not Assigned( Result.pCert ) then
-    MessageDlg( 'Не удалось получить сертификат!', mtError, [mbOK], 0 );
+    raise Exception.Create( 'Не удалось получить сертификат!' );
 end;
 
 function TSetSign.GetChainCerts( pCert : PCCERT_CONTEXT ) : TBBytes;
@@ -295,6 +295,20 @@ begin
   end;
 end;
 
+function TSetSign.MergeBuffer( LeftBuf : Pointer; LeftBufSize : Integer;
+  RightBuf : Pointer; RightBufSize : Integer ) : TBytes;
+begin
+  Result := NIL;
+  try
+    SetLength( Result, LeftBufSize + RightBufSize );
+    CopyMemory( Pointer( @Result[0] ), LeftBuf, LeftBufSize );
+    CopyMemory( Pointer( @Result[LeftBufSize] ), RightBuf, RightBufSize );
+  except
+    on E : Exception do
+      MessageDlg( E.Message,  mtError, [mbOK], 0 );  
+  end;
+end;
+
 function TSetSign.SingleSign( const Command : IReadCommand ) : Boolean;
 var
   hProv : HCRYPTPROV;
@@ -333,20 +347,6 @@ begin
       if ( hProv <> 0 ) then
         CryptReleaseContext( hProv, 0 );
     end;
-  end;
-end;
-
-function TSetSign.MergeBuffer( LeftBuf : Pointer; LeftBufSize : Integer;
-  RightBuf : Pointer; RightBufSize : Integer ) : TBytes;
-begin
-  Result := NIL;
-  try
-    SetLength( Result, LeftBufSize + RightBufSize );
-    CopyMemory( Pointer( @Result[0] ), LeftBuf, LeftBufSize );
-    CopyMemory( Pointer( @Result[LeftBufSize] ), RightBuf, RightBufSize );
-  except
-    on E : Exception do
-      MessageDlg( E.Message,  mtError, [mbOK], 0 );  
   end;
 end;
 

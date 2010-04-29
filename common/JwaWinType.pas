@@ -45,7 +45,7 @@
 
 {$IFNDEF JWA_OMIT_SECTIONS}
 unit JwaWinType;
-{$I ..\Includes\JediAPILib.inc}
+{$I JediAPILib.inc}
 
 {$WEAKPACKAGEUNIT}
 

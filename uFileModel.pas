@@ -19,7 +19,6 @@ type
     private
       MainModule_ : TMainModule;
       Directory_ : String;
-      Buffer : TBytes;
 
       procedure Execute( const Command : IReadCommand ); overload;
       procedure Execute( const Command : ICreateSignCommand ); overload;
@@ -50,7 +49,7 @@ end;
 
 destructor TFileModel.Destroy();
 begin
-  Buffer := NIL;
+//
 end;
 
 function TFileModel.Execute( const Command: ICommand ) : Boolean;
@@ -118,30 +117,53 @@ var
 begin
   Result := NIL;
   FileStream := NIL;
-  Buffer := NIL;
   try
-    FileStream := TFileStream.Create( Directory_ + FileName, fmOpenRead  );
+    FileStream := TFileStream.Create( Directory_ + FileName, fmOpenRead );
     if ( FileStream.Size = 0 ) then
       raise Exception.Create( 'Файл "' + Directory_ + FileName
         + '" пустой!' );
     try
-      SetLength( Buffer, FileStream.Size );
-      FileStream.ReadBuffer( Buffer[0], FileStream.Size );
+      SetLength( Result, FileStream.Size );
+      FileStream.ReadBuffer( Result[0], FileStream.Size );
     except
-      Buffer := NIL;
+      Result := NIL;
       raise;
     end;
   finally
     if Assigned( FileStream ) then
       FileStream.Free;
   end;
-  Result := Buffer;
 end;
 
 function TFileModel.ReadSign( const FileName : String ) : ISignContext;
+var
+  FileStream : TFileStream;
+  Buffer : TBytes;
 begin
-  // чтение содержимого файла подписи
   Result := NIL;
+  FileStream := NIL;
+  try
+    FileStream := TFileStream.Create( Directory_ + FileName + SIGN_EXT,
+      fmOpenRead );
+    if ( FileStream.Size = 0 ) then
+      raise Exception.Create( 'Файл "' + Directory_ + FileName + SIGN_EXT
+        + '" пустой!' );
+    try
+      Result := TSignContext.Create;
+      SetLength( Buffer, FileStream.Size );
+      FileStream.ReadBuffer( Buffer[0], FileStream.Size );
+      Result.Buffer := Buffer;
+      if not Result.IsValid() then
+        raise Exception.Create( 'В файле "' + Directory_ + FileName + SIGN_EXT
+          + '" некорректные данные!' );  
+    except
+      Result := NIL;
+      raise;
+    end;
+  finally
+    if Assigned( FileStream ) then
+      FileStream.Free;
+  end;
 end;
 
 procedure TFileModel.DeleteSign( const FileName : String );
@@ -161,6 +183,8 @@ begin
     FileStream := TFileStream.Create( Directory_ + FileName + SIGN_EXT,
       fmCreate );
     FileStream.WriteBuffer( Buffer[0], Length( Buffer ) );
+    FileSetAttr( Directory_ + FileName + SIGN_EXT, faHidden or faReadOnly );
+    FreeAndNil( FileStream );
     MainModule_.Refresh( FileName );
   finally
     if Assigned( FileStream ) then

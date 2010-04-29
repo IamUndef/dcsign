@@ -11,6 +11,7 @@ type
   ISignContext = interface( IInterface )
     ['{9B6C58C2-BD98-403B-9B7D-2A4D4EC0B918}']
 
+    function IsValid() : Boolean;
     procedure UnPack( const Buffer : TBytes );
     function Pack() : TBytes;
     function GetCSPName() : String;

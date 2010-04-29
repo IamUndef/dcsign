@@ -53,7 +53,7 @@ unit JwaWinBase;
 
 {$IFNDEF JWA_OMIT_SECTIONS}
 
-{$I ..\Includes\JediAPILib.inc}
+{$I JediAPILib.inc}
 
 {$STACKFRAMES ON} // must be after include. FPC's $MODE command resets this
 

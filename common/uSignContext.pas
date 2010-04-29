@@ -14,8 +14,6 @@ type
       Sign_ : TBytes;
       Certificates_ : TBBytes;
 
-      function IsValid() : Boolean;
-
     protected
       procedure UnPack( const Buffer : TBytes );
       function Pack() : TBytes;
@@ -34,6 +32,8 @@ type
       constructor Create(); overload;
       constructor Create( const Buffer : TBytes ); overload;
 
+      function IsValid() : Boolean;
+
       property Buffer : TBytes read Pack write UnPack;
       property CSPName : String read GetCSPName write SetCSPName;
       property AlgId : Integer read GetAlgId write SetAlgId;
@@ -46,7 +46,7 @@ type
 
 implementation
 
-uses Windows;
+uses Windows, Classes;
 
 constructor TSignContext.Create();
 begin
@@ -75,8 +75,86 @@ begin
 end;
 
 procedure TSignContext.UnPack( const Buffer : TBytes );
+var
+  i : Integer;
+  BufPos : PChar;
+  SignSize : Integer;
+  CertsCount : Integer;
+  CertSize : Integer;
+
+function EndOfBuffer( AddSize : Integer ) : Boolean;
 begin
-// Парсим Buffer
+  Result := ( Integer( BufPos - PChar( Buffer ) ) + AddSize ) > Length( Buffer );
+end;
+
+begin
+  if Assigned( Buffer ) then
+  begin
+    CSPName_ := '';
+    AlgId_ := 0;
+    DateTime_ := 0;
+    Sign := NIL;
+    Certificates_ := NIL;
+    BufPos := PChar( Buffer );
+    while ( ( BufPos <> PChar( @Buffer[Length( Buffer )] ) ) and ( BufPos^ <> #0 ) ) do
+      Inc( BufPos );
+    if ( BufPos <> PChar( @Buffer[Length( Buffer )] ) ) then
+    begin
+      CSPName_ := PChar( Buffer );
+      if not EndOfBuffer( SizeOf( Char ) + 2*SizeOf( Integer ) +
+          SizeOf( TDateTime ) ) then 
+      begin
+        // Получаем AlgId, DateTime и размер Sign
+        Inc( BufPos, SizeOf( Char ) );
+        AlgId := PInteger( BufPos )^;
+        Inc( BufPos, SizeOf( Integer ) );
+        DateTime_ := PDateTime( BufPos )^;
+        Inc( BufPos, SizeOf( TDateTime ) );
+        SignSize := PInteger( BufPos )^;
+        Inc( BufPos, SizeOf( Integer ) );
+        if not EndOfBuffer( SignSize ) then
+        begin
+          // Получаем Sign
+          SetLength( Sign_, SignSize );
+          CopyMemory( Pointer( @Sign[0] ), Pointer( BufPos ), SignSize );
+          Inc( BufPos, SignSize );
+          if not EndOfBuffer( SizeOf( Integer ) ) then
+          begin
+            // Получаем количество сертификатов
+            CertsCount := PInteger( BufPos )^;
+            Inc( BufPos, SizeOf( Integer ) );
+            if not EndOfBuffer( CertsCount*SizeOf( Integer ) ) then
+            begin
+              SetLength( Certificates_, CertsCount );
+              // Получаем сертификаты
+              for i := 0 to CertsCount - 1 do
+              begin
+                if not EndOfBuffer( SizeOf( Integer ) ) then
+                begin
+                  // Получаем размер сертификата
+                  CertSize := PInteger( BufPos )^;
+                  Inc( BufPos, SizeOf( Integer ) );
+                  if not EndOfBuffer( CertSize ) then
+                  begin
+                    // Получаем данные сертификата
+                    SetLength( Certificates_[i], CertSize );
+                    CopyMemory( Pointer( @Certificates_[i][0] ),
+                      Pointer( BufPos ),
+                      CertSize );
+                    Inc( BufPos, Length( Certificates_[i] ) );
+                  end else
+                    Certificates_ := NIL;
+                end else
+                  Certificates_ := NIL;
+                if not Assigned( Certificates_ ) then
+                  Break;
+              end;
+            end;
+          end;
+        end;
+      end;
+    end;
+  end;
 end;
 
 function TSignContext.Pack() : TBytes;

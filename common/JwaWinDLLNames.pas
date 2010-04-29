@@ -38,7 +38,7 @@ unit JwaWinDLLNames;
 
 {$WEAKPACKAGEUNIT}
 
-{$I ..\Includes\JediAPILib.inc}
+{$I JediAPILib.inc}
 
 interface
 {$ENDIF JWA_OMIT_SECTIONS}
