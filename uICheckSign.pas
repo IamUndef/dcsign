@@ -7,7 +7,7 @@ type
   ICheckSign = interface( IInterface )
 
     function SingleCheck( const FileName : String ) : Boolean;
-    procedure ViewCertificates( const FileName : String );
+    procedure ViewCertificate( const FileName : String );
     function GetCertSubject() : String;
     function GetDateTime() : TDateTime;
 

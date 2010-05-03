@@ -25,19 +25,30 @@ type
     lbDateTime: TLabel;
     lbSubjectTitle: TLabel;
     mSubject: TMemo;
-    GroupBox1: TGroupBox;
+    gbSignInfo: TGroupBox;
     aExit: TAction;
     miExit: TMenuItem;
+    aOpen: TAction;
+    mniFileSeparator: TMenuItem;
+    miOpen: TMenuItem;
+    aViewCert: TAction;
+    miViewCert: TMenuItem;
+    miSignSeparator: TMenuItem;
+    aSelectCheckSign: TAction;
+    miCheckSign: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure aOpenExecute(Sender: TObject);
     procedure aExitExecute(Sender: TObject);
     procedure aSetSignExecute(Sender: TObject);
     procedure aSetSignUpdate(Sender: TObject);
     procedure aCheckSignExecute(Sender: TObject);
     procedure aCheckSignUpdate(Sender: TObject);
-    procedure lvFilesChange(Sender: TObject; Item: TListItem;
-      Change: TItemChange);
+    procedure aSelectCheckSignExecute(Sender: TObject);
+    procedure aSelectCheckSignUpdate(Sender: TObject);
+    procedure lvFilesSelectItem(Sender: TObject; Item: TListItem;
+      Selected: Boolean);
 
   private
     const
@@ -63,7 +74,7 @@ implementation
 
 {$R *.dfm}
 
-uses uICommands, uFileModel, uCheckSign, uCommands;
+uses FileCtrl, uICommands, uFileModel, uCheckSign, uCommands;
 
 procedure TMainModule.FormCreate(Sender: TObject);
 
@@ -90,7 +101,6 @@ end;
 
 procedure TMainModule.FormDestroy(Sender: TObject);
 begin
-  FileModel := NIL;
   if Assigned( SetSign ) then
   begin
     SetSign := NIL;
@@ -100,7 +110,17 @@ end;
 
 procedure TMainModule.FormShow(Sender: TObject);
 begin
-  FileModel.Open( 'c:\' );
+  aSetSign.Visible := Assigned( SetSign );
+end;
+
+procedure TMainModule.aOpenExecute(Sender: TObject);
+var
+  Dir : String;
+begin
+  if ( SelectDirectory( 'Выберите папку', '', Dir ) ) then
+  begin
+    FileModel.Open( Dir );
+  end;
 end;
 
 procedure TMainModule.aExitExecute(Sender: TObject);
@@ -110,19 +130,15 @@ end;
 
 procedure TMainModule.aSetSignExecute(Sender: TObject);
 begin
-  if ( Assigned( SetSign ) and
-      ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = -1 ) ) then
-    SetSign.Execute( TSignCommand.Create(
-      lvFiles.Items[lvFiles.ItemIndex].SubItems[0] ) as ICommand );
+  SetSign.Execute( TSignCommand.Create(
+    lvFiles.Items[lvFiles.ItemIndex].SubItems[0] ) as ICommand );
 end;
 
 procedure TMainModule.aSetSignUpdate(Sender: TObject);
 begin
-  if ( ( lvFiles.ItemIndex <> -1 ) and
-      ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = -1 ) ) then
-    aSetSign.Enabled := true
-  else
-    aSetSign.Enabled := false;
+  aSetSign.Enabled := ( Assigned( SetSign ) and
+    ( ( lvFiles.SelCount >= 1 ) and
+      ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = -1 ) ) );
 end;
 
 procedure TMainModule.aCheckSignExecute(Sender: TObject);
@@ -148,7 +164,7 @@ end;
 
 procedure TMainModule.aCheckSignUpdate(Sender: TObject);
 begin
-  if ( ( lvFiles.ItemIndex <> -1 ) and
+  if ( ( lvFiles.SelCount = 1 ) and
       ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = 0 ) ) then
     aCheckSign.Enabled := true
   else
@@ -160,10 +176,32 @@ begin
   end;
 end;
 
-procedure TMainModule.lvFilesChange(Sender: TObject; Item: TListItem;
-  Change: TItemChange);
+procedure TMainModule.aSelectCheckSignExecute(Sender: TObject);
 begin
-  aCheckSign.Execute();
+//
+end;
+
+procedure TMainModule.aSelectCheckSignUpdate(Sender: TObject);
+begin
+  aSelectCheckSign.Enabled := ( lvFiles.SelCount > 1 ) and
+    ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = 0 );
+  aSelectCheckSign.Visible := aSelectCheckSign.Enabled;
+end;
+
+procedure TMainModule.lvFilesSelectItem(Sender: TObject; Item: TListItem;
+  Selected: Boolean);
+begin
+  if Selected then
+  begin
+    if ( lvFiles.SelCount = 1 ) then
+      lvFiles.Tag := lvFiles.ItemIndex;
+    if ( ( lvFiles.SelCount >= 1 ) and
+        ( Item.ImageIndex = lvFiles.Items[lvFiles.Tag].ImageIndex ) ) then
+      aCheckSign.Execute()
+    else
+      Item.Selected := false;
+  end else if ( Item.ImageIndex = 0 ) then
+    aCheckSign.Execute();
 end;
 
 procedure TMainModule.Refresh( FilesInfo : TStringList );

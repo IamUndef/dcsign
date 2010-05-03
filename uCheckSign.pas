@@ -30,7 +30,7 @@ type
       function SingleCheck( const FileName : String ) : Boolean;
       //MultiCheckSign
 
-      procedure ViewCertificates( const FileName : String );
+      procedure ViewCertificate( const FileName : String );
 
       property CertSubject : String read GetCertSubject;
       property DateTime : TDateTime read GetDateTime;
@@ -92,7 +92,7 @@ begin
   end;
 end;
 
-procedure TCheckSign.ViewCertificates( const FileName : String );
+procedure TCheckSign.ViewCertificate( const FileName : String );
 begin
 // Показываем данные сертификата
 end;

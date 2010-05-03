@@ -64,14 +64,11 @@ end;
 
 function TSignContext.IsValid() : Boolean;
 begin
-  if ( ( CSPName_ <> '' ) and
-      ( AlgId_ <> 0 ) and
-      ( DateTime_ <> 0 ) and
-      ( Sign_ <> NIL ) and
-      ( Certificates_ <> NIL ) ) then
-    Result := true
-  else
-    Result := false;
+  Result := ( ( CSPName_ <> '' ) and
+    ( AlgId_ <> 0 ) and
+    ( DateTime_ <> 0 ) and
+    ( Sign_ <> NIL ) and
+    ( Certificates_ <> NIL ) );
 end;
 
 procedure TSignContext.UnPack( const Buffer : TBytes );

@@ -88,10 +88,10 @@ var
 begin
   FilesInfo := NIL;
   try
+    FilesInfo := TStringList.Create;
     if ( FindFirst( Directory + '*.*', 0, SearchRec ) = 0 ) then
     begin
       try
-        FilesInfo := TStringList.Create;
         while FindNext( SearchRec ) = 0 do
           if ( ExtractFileExt( SearchRec.Name ) <> SIGN_EXT ) then
           begin
@@ -183,13 +183,12 @@ begin
     FileStream := TFileStream.Create( Directory_ + FileName + SIGN_EXT,
       fmCreate );
     FileStream.WriteBuffer( Buffer[0], Length( Buffer ) );
-    FileSetAttr( Directory_ + FileName + SIGN_EXT, faHidden or faReadOnly );
-    FreeAndNil( FileStream );
-    MainModule_.Refresh( FileName );
+    FileSetAttr( Directory_ + FileName + SIGN_EXT, {faHidden or} faReadOnly );
   finally
     if Assigned( FileStream ) then
       FileStream.Free;
   end;
+  MainModule_.Refresh( FileName );
 end;
 
 end.
