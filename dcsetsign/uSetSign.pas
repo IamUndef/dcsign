@@ -164,7 +164,7 @@ begin
           CERT_STORE_ADD_REPLACE_EXISTING, NIL );
     end;
   finally
-    if hUserKey <> 0 then
+    if ( hUserKey <> 0 ) then
       CryptDestroyKey( hUserKey );  
     CertCloseStore( hStore, 0 );
   end;

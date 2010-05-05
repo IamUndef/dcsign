@@ -39,7 +39,7 @@ type
 
 implementation
 
-uses Windows, Dialogs, uISignContext;
+uses Windows, Dialogs, JwaCryptUIApi, JwaWinError, uISignContext;
 
 constructor TCheckSign.Create( const FileModel : IFileModel );
 begin
@@ -93,8 +93,75 @@ begin
 end;
 
 procedure TCheckSign.ViewCertificate( const FileName : String );
+var
+  i : Integer;
+  SignContext : ISignContext;
+  hRootStore : HCERTSTORE;
+  hMemStore : HCERTSTORE;
+  pRootCert : PCCERT_CONTEXT;
+  pCert : PCCERT_CONTEXT;
 begin
-// Показываем данные сертификата
+  hRootStore := NIL;
+  pRootCert := NIL;
+  pCert := NIL;
+  try
+    try
+      SignContext := Model.ReadSign( FileName );
+      hRootStore := CertOpenSystemStore ( 0, 'ROOT' );
+      if not Assigned( hRootStore ) then
+        raise Exception.Create(
+          'Не удалось получить доступ к хранилищу доверенных корневых центров сертификации!' );
+      if not CertAddEncodedCertificateToStore( hRootStore,
+          X509_ASN_ENCODING or PKCS_7_ASN_ENCODING,
+          @SignContext.Certificates[High( SignContext.Certificates )][0],
+          Length( SignContext.Certificates[High( SignContext.Certificates )] ),
+          CERT_STORE_ADD_USE_EXISTING,
+          @pRootCert ) then
+        raise Exception.Create(
+          'Не удалось добавить корневой сертификат в хранилище доверенных корневых центров сертификации!' );
+      if ( Length( SignContext.Certificates ) > 1 ) then
+      begin
+        hMemStore := CertOpenStore( CERT_STORE_PROV_MEMORY, 0, 0, 0, NIL );
+        if not Assigned( hMemStore ) then
+          raise Exception.Create( 'Не удалось создать временное хранилище!' );
+        try
+          if not CertAddEncodedCertificateToStore( hMemStore,
+              X509_ASN_ENCODING or PKCS_7_ASN_ENCODING,
+              @SignContext.Certificates[0][0],
+              Length( SignContext.Certificates[0] ),
+              CERT_STORE_ADD_ALWAYS,
+              @pCert ) then
+            raise Exception.Create(
+              'Не удалось добавить сертификат во временное хранилище!' );
+          for i := 1 to High( SignContext.Certificates ) - 1 do
+            if not CertAddEncodedCertificateToStore( hMemStore,
+                X509_ASN_ENCODING or PKCS_7_ASN_ENCODING,
+                @SignContext.Certificates[i][0],
+                Length( SignContext.Certificates[i] ),
+                CERT_STORE_ADD_ALWAYS,
+                NIL ) then
+              raise Exception.Create(
+                'Не удалось добавить сертификат во временное хранилище!' );
+          CryptUIDlgViewContext( CERT_STORE_CERTIFICATE_CONTEXT, pCert, 0, NIL,
+            0, NIL );
+        finally
+          if Assigned( pCert ) then
+            CertFreeCertificateContext( pCert );
+          CertCloseStore( hMemStore, {CERT_CLOSE_STORE_FORCE_FLAG} 0 );
+        end;
+      end else
+        CryptUIDlgViewContext( CERT_STORE_CERTIFICATE_CONTEXT, pRootCert, 0,
+          NIL, 0, NIL );
+    finally
+      if Assigned( pRootCert ) then
+        CertFreeCertificateContext( pRootCert );
+      if Assigned( hRootStore ) then
+        CertCloseStore( hRootStore, {CERT_CLOSE_STORE_FORCE_FLAG} 0 );
+    end;
+  except
+    on E : Exception do
+      MessageDlg( E.Message,  mtError, [mbOK], 0 );
+  end;
 end;
 
 function TCheckSign.GetCertSubject() : String;

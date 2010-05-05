@@ -29,30 +29,49 @@ type
     aExit: TAction;
     miExit: TMenuItem;
     aOpen: TAction;
-    mniFileSeparator: TMenuItem;
+    mniFileSeparator2: TMenuItem;
     miOpen: TMenuItem;
     aViewCert: TAction;
     miViewCert: TMenuItem;
     miSignSeparator: TMenuItem;
     aSelectCheckSign: TAction;
     miCheckSign: TMenuItem;
+    aDelSign: TAction;
+    miDelSign: TMenuItem;
+    aOpenAndCheckSign: TAction;
+    aOpenAndSetSign: TAction;
+    aSetting: TAction;
+    miOpenAndCheckSign: TMenuItem;
+    miOpenAndSetSign: TMenuItem;
+    miSetting: TMenuItem;
+    sbMain: TStatusBar;
+    miFileSeparator1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure aOpenExecute(Sender: TObject);
+    procedure aOpenAndSetSignExecute(Sender: TObject);
+    procedure aOpenAndCheckSignExecute(Sender: TObject);
     procedure aExitExecute(Sender: TObject);
-    procedure aSetSignExecute(Sender: TObject);
-    procedure aSetSignUpdate(Sender: TObject);
+    procedure aViewCertExecute(Sender: TObject);
+    procedure aViewCertUpdate(Sender: TObject);
     procedure aCheckSignExecute(Sender: TObject);
     procedure aCheckSignUpdate(Sender: TObject);
     procedure aSelectCheckSignExecute(Sender: TObject);
     procedure aSelectCheckSignUpdate(Sender: TObject);
+    procedure aSetSignExecute(Sender: TObject);
+    procedure aSetSignUpdate(Sender: TObject);
+    procedure aDelSignExecute(Sender: TObject);
+    procedure aDelSignUpdate(Sender: TObject);
+    procedure aSettingExecute(Sender: TObject);
     procedure lvFilesSelectItem(Sender: TObject; Item: TListItem;
       Selected: Boolean);
 
   private
     const
       SETSIGN_DLL = 'dcsetsign.dll';
+      SETSIGN_FUNC = 'GetInstance';
+
       SIGN_VALID = 'ƒ≈…—“¬»“≈À‹Õ¿';
       SIGN_INVALID = 'Õ≈ƒ≈…—“¬»“≈À‹Õ¿';
 
@@ -63,7 +82,7 @@ type
 
   public
     procedure Refresh( FilesInfo : TStringList ); overload;
-    procedure Refresh( FileName : String ); overload;
+    procedure Refresh( FileName : String; IsSign : Boolean = true ); overload;
 
   end;
 
@@ -91,7 +110,7 @@ begin
   SetSignDLL := LoadLibrary( SETSIGN_DLL );
   if ( SetSignDLL <> 0 ) then
   begin
-    @GetInstance := GetProcAddress( SetSignDLL, 'GetInstance' );
+    @GetInstance := GetProcAddress( SetSignDLL, SETSIGN_FUNC );
     if Assigned( @GetInstance ) then
       SetSign := GetInstance( FileModel as IModule )
     else
@@ -106,10 +125,12 @@ begin
     SetSign := NIL;
     FreeLibrary( GetModuleHandle( SETSIGN_DLL ) );
   end;
+  lvFiles.OnSelectItem := NIL;
 end;
 
 procedure TMainModule.FormShow(Sender: TObject);
 begin
+  miSignSeparator.Visible := Assigned( SetSign );
   aSetSign.Visible := Assigned( SetSign );
 end;
 
@@ -123,22 +144,30 @@ begin
   end;
 end;
 
+procedure TMainModule.aOpenAndCheckSignExecute(Sender: TObject);
+begin
+//
+end;
+
+procedure TMainModule.aOpenAndSetSignExecute(Sender: TObject);
+begin
+//
+end;
+
 procedure TMainModule.aExitExecute(Sender: TObject);
 begin
   Close();
 end;
 
-procedure TMainModule.aSetSignExecute(Sender: TObject);
+procedure TMainModule.aViewCertExecute(Sender: TObject);
 begin
-  SetSign.Execute( TSignCommand.Create(
-    lvFiles.Items[lvFiles.ItemIndex].SubItems[0] ) as ICommand );
+  CheckSign.ViewCertificate( lvFiles.Items[lvFiles.ItemIndex].SubItems[0] );
 end;
 
-procedure TMainModule.aSetSignUpdate(Sender: TObject);
+procedure TMainModule.aViewCertUpdate(Sender: TObject);
 begin
-  aSetSign.Enabled := ( Assigned( SetSign ) and
-    ( ( lvFiles.SelCount >= 1 ) and
-      ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = -1 ) ) );
+  aViewCert.Enabled := ( lvFiles.SelCount = 1 ) and
+    ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = 0 );
 end;
 
 procedure TMainModule.aCheckSignExecute(Sender: TObject);
@@ -185,7 +214,38 @@ procedure TMainModule.aSelectCheckSignUpdate(Sender: TObject);
 begin
   aSelectCheckSign.Enabled := ( lvFiles.SelCount > 1 ) and
     ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = 0 );
-  aSelectCheckSign.Visible := aSelectCheckSign.Enabled;
+end;
+
+procedure TMainModule.aSetSignExecute(Sender: TObject);
+begin
+  SetSign.Execute( TSignCommand.Create(
+    lvFiles.Items[lvFiles.ItemIndex].SubItems[0] ) as ICommand );
+end;
+
+procedure TMainModule.aSetSignUpdate(Sender: TObject);
+begin
+  aSetSign.Enabled := ( Assigned( SetSign ) and
+    ( ( lvFiles.SelCount >= 1 ) and
+      ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = -1 ) ) );
+end;
+
+procedure TMainModule.aDelSignExecute(Sender: TObject);
+begin
+  if ( lvFiles.SelCount = 1 ) then
+    FileModel.DeleteSign( lvFiles.Items[lvFiles.ItemIndex].SubItems[0] )
+  else if ( lvFiles.SelCount > 1 ) then
+  // MultiDeleteSign  
+end;
+
+procedure TMainModule.aDelSignUpdate(Sender: TObject);
+begin
+  aDelSign.Enabled := ( lvFiles.SelCount >= 1 ) and
+    ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = 0 );
+end;
+
+procedure TMainModule.aSettingExecute(Sender: TObject);
+begin
+//
 end;
 
 procedure TMainModule.lvFilesSelectItem(Sender: TObject; Item: TListItem;
@@ -221,18 +281,19 @@ begin
   end;
 end;
 
-procedure TMainModule.Refresh( FileName: String );
+procedure TMainModule.Refresh( FileName: String; IsSign : Boolean = true );
 var
   i : Integer;
 begin
   for i := 0 to lvFiles.Items.Count - 1 do
-  begin
     if ( lvFiles.Items[i].SubItems.Strings[0] = FileName ) then
     begin
-      lvFiles.Items[i].ImageIndex := 0;
+      if IsSign then
+        lvFiles.Items[i].ImageIndex := 0
+      else
+        lvFiles.Items[i].ImageIndex := -1;
       Break;
     end;
-  end;
   aCheckSign.Execute();
   lvFiles.Invalidate();
 end;

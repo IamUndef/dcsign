@@ -11,9 +11,6 @@ type
     private
       const
         SIGN_EXT = '.sign';
-
-    public
-      const
         FILE_SIGN_FLAG = 1;
         
     private
@@ -34,13 +31,14 @@ type
       procedure Open( const Directory : String );
       function Read( const FileName : String ) : TBytes;
       function ReadSign( const FileName : String ) : ISignContext;
-      procedure DeleteSign( const FileName : String );
+      function DeleteSign( const FileName : String ) : Boolean;
+      //MultiDeleteSign
 
   end;
 
 implementation
 
-uses Dialogs, uSignContext;
+uses Windows, Dialogs, uSignContext;
 
 constructor TFileModel.Create( MainModule: TMainModule );
 begin
@@ -100,7 +98,7 @@ begin
               FilesInfo.Objects[Index] := TObject( FILE_SIGN_FLAG );
           end;
       finally
-        FindClose( SearchRec );
+        SysUtils.FindClose( SearchRec );
       end;
     end;
     MainModule_.Refresh( FilesInfo );
@@ -166,9 +164,14 @@ begin
   end;
 end;
 
-procedure TFileModel.DeleteSign( const FileName : String );
+function TFileModel.DeleteSign( const FileName : String ) : Boolean;
 begin
-  // удаление файла подписи
+  FileSetAttr( Directory_ + FileName + SIGN_EXT, 0 );
+  Result := SysUtils.DeleteFile( Directory_ + FileName + SIGN_EXT );
+  if not Result then
+    raise Exception.Create( 'Не удалось удалить файл "' + Directory_ +
+      FileName + SIGN_EXT + '"!' );
+  MainModule_.Refresh( FileName, false );
 end;
 
 procedure TFileModel.CreateSign( const FileName : String; const Buffer : TBytes );

@@ -12,7 +12,7 @@ type
     procedure Open( const Directory : String );
     function Read( const FileName : String ) : TBytes;
     function ReadSign( const FileName : String ) : ISignContext;
-    procedure DeleteSign( const FileName : String );
+    function DeleteSign( const FileName : String ) : Boolean;
 
   end;
 

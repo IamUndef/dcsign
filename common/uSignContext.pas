@@ -81,7 +81,10 @@ var
 
 function EndOfBuffer( AddSize : Integer ) : Boolean;
 begin
-  Result := ( Integer( BufPos - PChar( Buffer ) ) + AddSize ) > Length( Buffer );
+  if ( AddSize >= 0 ) then
+    Result := ( Integer( BufPos - PChar( Buffer ) ) + AddSize ) > Length( Buffer )
+  else
+    Result := true;
 end;
 
 begin
