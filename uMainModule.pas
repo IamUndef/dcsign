@@ -130,8 +130,14 @@ end;
 
 procedure TMainModule.FormShow(Sender: TObject);
 begin
-  miSignSeparator.Visible := Assigned( SetSign );
-  aSetSign.Visible := Assigned( SetSign );
+  if not Assigned( SetSign ) then
+  begin
+    aOpenAndSetSign.Visible := false;
+    miSignSeparator.Visible := false;
+    aSetSign.Visible := false;
+    aDelSign.Visible := false;
+    aSetting.Visible := false;
+  end;
 end;
 
 procedure TMainModule.aOpenExecute(Sender: TObject);
@@ -224,22 +230,24 @@ end;
 
 procedure TMainModule.aSetSignUpdate(Sender: TObject);
 begin
-  aSetSign.Enabled := ( Assigned( SetSign ) and
-    ( ( lvFiles.SelCount >= 1 ) and
-      ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = -1 ) ) );
+  aSetSign.Enabled := Assigned( SetSign ) and ( lvFiles.SelCount >= 1 ) and
+      ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = -1 );
 end;
 
 procedure TMainModule.aDelSignExecute(Sender: TObject);
 begin
-  if ( lvFiles.SelCount = 1 ) then
-    FileModel.DeleteSign( lvFiles.Items[lvFiles.ItemIndex].SubItems[0] )
-  else if ( lvFiles.SelCount > 1 ) then
-  // MultiDeleteSign  
+  if ( IDYES =  Application.MessageBox(
+      'Вы действительно хотите удалить подпись?', 'Удаление подписи',
+      MB_YESNO + MB_ICONQUESTION + MB_DEFBUTTON2 ) ) then
+    if ( lvFiles.SelCount = 1 ) then
+      FileModel.DeleteSign( lvFiles.Items[lvFiles.ItemIndex].SubItems[0] )
+    else if ( lvFiles.SelCount > 1 ) then
+    // MultiDeleteSign
 end;
 
 procedure TMainModule.aDelSignUpdate(Sender: TObject);
 begin
-  aDelSign.Enabled := ( lvFiles.SelCount >= 1 ) and
+  aDelSign.Enabled := Assigned( SetSign ) and ( lvFiles.SelCount >= 1 ) and
     ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = 0 );
 end;
 
@@ -296,6 +304,10 @@ begin
     end;
   aCheckSign.Execute();
   lvFiles.Invalidate();
+  if IsSign then
+    MessageDlg( 'Файл успешно подписан!',  mtInformation, [mbOK], 0 )
+  else
+    MessageDlg( 'Подпись успешно удалена!',  mtInformation, [mbOK], 0 );
 end;
 
 end.

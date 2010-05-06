@@ -29,7 +29,8 @@ uses
   uSignContext in '..\common\uSignContext.pas',
   uCommands in 'uCommands.pas',
   uSimpleCommand in '..\common\uSimpleCommand.pas',
-  uISignContext in '..\common\uISignContext.pas';
+  uISignContext in '..\common\uISignContext.pas',
+  uSelectContainer in 'uSelectContainer.pas' {SelectContainer};
 
 exports
   GetInstance;

@@ -48,7 +48,7 @@ type
 
 implementation
 
-uses Dialogs, uCommands;
+uses Controls, Dialogs, uCommands, uSelectContainer;
 
 function GetInstance( const FileModel : IModule ) : IModule; export;
 begin
@@ -61,7 +61,7 @@ begin
 
   // Test
   CSPName := 'Crypto-Pro GOST R 34.10-2001 Cryptographic Service Provider';
-  Container := 'SaharovDA';
+  Container := '';
   AlgId := 32798;
 
 end;
@@ -96,9 +96,11 @@ var
   ProvType : DWORD;
   Size : DWORD;
   Data : String;
+  SelectContainer : TSelectContainer;
 begin
   Result := 0;
   Index := 0;
+  SelectContainer := NIL;
   while CryptEnumProviders( Index, NIL, 0, ProvType, NIL, Size ) do
   begin
     SetLength( Data, Size );
@@ -107,7 +109,34 @@ begin
       break;
     Inc( Index );
   end;
-  CryptAcquireContext( Result, PChar( Container ), PChar( CSPName ), ProvType, 0 );
+  try
+    while ( ( Container = '' ) or
+        not CryptAcquireContext( Result, PChar( Container ), PChar( CSPName ),
+          ProvType, 0 ) ) do
+    begin
+      if not CryptAcquireContext( Result, PChar( Container ), '', ProvType,
+          CRYPT_VERIFYCONTEXT ) then
+        Break
+      else
+      begin
+        try
+          if not Assigned( SelectContainer ) then
+            SelectContainer := TSelectContainer.Create( @Result );
+          SelectContainer.Container := Container;
+          SelectContainer.ShowModal();
+          Container := SelectContainer.Container;
+          if ( mrCancel = SelectContainer.ModalResult ) then
+            Break
+        finally
+          CryptReleaseContext( Result, 0 );
+          Result := 0;
+        end;
+      end;
+    end;
+  finally
+    if Assigned( SelectContainer ) then
+      SelectContainer.Free;
+  end;
   if ( Result = 0 ) then
     raise Exception.Create( 'Не удалось инициализировать криптопровайдер - "' +
       CSPName + '"!' );
