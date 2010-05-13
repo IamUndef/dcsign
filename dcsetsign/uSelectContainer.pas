@@ -57,12 +57,10 @@ end;
 
 procedure TSelectContainer.aRefreshExecute(Sender: TObject);
 var
-  SelContainer : String;
   Size : DWORD;
   Flag : DWORD;
   Data : String;
 begin
-  SelContainer := Container_;
   cbContainer.Clear;
   if CryptGetProvParam( hProv^, PP_ENUMCONTAINERS, NIL, Size, CRYPT_FIRST ) then
   begin
@@ -77,10 +75,12 @@ begin
   end;
   if ( cbContainer.Items.Count <> 0 ) then
   begin
-    cbContainer.ItemIndex := cbContainer.Items.IndexOf( SelContainer );
+    cbContainer.Enabled := true;
+    cbContainer.ItemIndex := cbContainer.Items.IndexOf( Container_ );
     if ( cbContainer.ItemIndex = -1 ) then
       cbContainer.ItemIndex := 0;
-  end;
+  end else
+    cbContainer.Enabled := false;
   if ( aRefresh.Tag = 0 ) then
     MessageDlg( 'Список контейнеров обновлен!',  mtInformation, [mbOK], 0 );
 end;

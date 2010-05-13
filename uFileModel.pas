@@ -83,20 +83,25 @@ var
   Index : Integer;
   SearchRec : TSearchRec;
   FilesInfo : TStringList;
+  OpenedDir : String;
 begin
+  OpenedDir := Directory;
+  if ( OpenedDir[ Length( OpenedDir ) ] <> '\' ) then
+    OpenedDir := OpenedDir + '\';
   FilesInfo := NIL;
   try
     FilesInfo := TStringList.Create;
-    if ( FindFirst( Directory + '*.*', 0, SearchRec ) = 0 ) then
+    if ( FindFirst( OpenedDir + '*.*', 0, SearchRec ) = 0 ) then
     begin
       try
-        while FindNext( SearchRec ) = 0 do
+        repeat
           if ( ExtractFileExt( SearchRec.Name ) <> SIGN_EXT ) then
           begin
             Index := FilesInfo.Add( SearchRec.Name );
-            if FileExists( Directory + SearchRec.Name + SIGN_EXT ) then
+            if FileExists( OpenedDir + SearchRec.Name + SIGN_EXT ) then
               FilesInfo.Objects[Index] := TObject( FILE_SIGN_FLAG );
           end;
+        until FindNext( SearchRec ) <> 0;
       finally
         SysUtils.FindClose( SearchRec );
       end;
@@ -106,7 +111,7 @@ begin
     if Assigned( FilesInfo ) then
       FilesInfo.Free;
   end;
-  Directory_ := Directory;
+  Directory_ := OpenedDir;
 end;
 
 function TFileModel.Read( const FileName : String ) : TBytes;

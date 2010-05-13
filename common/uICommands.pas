@@ -42,6 +42,11 @@ type
 
   end;
 
+  ISettingCommand = interface( ICommand )
+    ['{8F194E24-6925-4810-BC18-866159C3D335}']
+  end;
+
+
 implementation
 
 end.

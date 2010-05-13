@@ -7,6 +7,13 @@ uses SysUtils, Windows, JwaWinCrypt, uIModule, uICommands, uISignContext;
 type
   TSetSign = class( TInterfacedObject, IModule )
     private
+      const
+        DEFAULT_CSP =
+          'Crypto-Pro GOST R 34.10-2001 Cryptographic Service Provider';
+        DEFAULT_ALGID = 32798;
+        DEFAULT_CONTAINER = '';
+        
+    private
       type
         TKeyInfo = record
           KeyType : DWORD;
@@ -21,10 +28,11 @@ type
     private
       Model : IModule;
       CSPName : String;
-      Container : String;
       AlgId : Integer;
-
+      Container : String;
+      
       procedure Execute( const Command : ISignCommand ); overload;
+      procedure Execute( const Command : ISettingCommand ); overload;
 
       function InitCSP() : HCRYPTPROV;
       function GetCertificate( hProv : HCRYPTPROV ) : TKeyInfo;
@@ -48,7 +56,7 @@ type
 
 implementation
 
-uses Controls, Dialogs, uCommands, uSelectContainer;
+uses Controls, Dialogs, uCommands, uSetting, uSelectContainer;
 
 function GetInstance( const FileModel : IModule ) : IModule; export;
 begin
@@ -58,12 +66,9 @@ end;
 constructor TSetSign.Create( const FileModel: IModule );
 begin
   Model := FileModel;
-
-  // Test
-  CSPName := 'Crypto-Pro GOST R 34.10-2001 Cryptographic Service Provider';
-  Container := '';
-  AlgId := 32798;
-
+  CSPName := DEFAULT_CSP;
+  AlgId := DEFAULT_ALGID;
+  Container := DEFAULT_CONTAINER;
 end;
 
 function TSetSign.Execute( const Command : ICommand ) : Boolean;
@@ -72,6 +77,8 @@ begin
   try
     if Supports( Command, ISignCommand ) then
       Execute( Command as ISignCommand )
+    else if Supports( Command, ISettingCommand ) then
+      Execute( Command as ISettingCommand )
     else
       raise Exception.Create( 'Команда не поддерживается!' );
     Result := true;
@@ -88,6 +95,26 @@ begin
   ReadCmd := TReadCommand.Create( Command.FileName );
   if Model.Execute( ReadCmd as ICommand ) then
     SingleSign( ReadCmd );
+end;
+
+procedure TSetSign.Execute( const Command : ISettingCommand );
+var
+  Setting : TSetting;
+begin
+  Setting := NIL;
+  try
+    Setting := TSetting.Create( NIL );
+    Setting.CSPName := CSPName;
+    Setting.AlgId := AlgId;
+    if ( mrOk = Setting.ShowModal() ) then
+    begin
+      CSPName := Setting.CSPName;
+      AlgId := Setting.AlgId;
+    end;
+  finally
+    if Assigned( Setting ) then
+      Setting.Free;
+  end;
 end;
 
 function TSetSign.InitCSP() : HCRYPTPROV;
@@ -114,7 +141,7 @@ begin
         not CryptAcquireContext( Result, PChar( Container ), PChar( CSPName ),
           ProvType, 0 ) ) do
     begin
-      if not CryptAcquireContext( Result, PChar( Container ), '', ProvType,
+      if not CryptAcquireContext( Result, '', PChar( CSPName ), ProvType,
           CRYPT_VERIFYCONTEXT ) then
         Break
       else
@@ -124,9 +151,10 @@ begin
             SelectContainer := TSelectContainer.Create( @Result );
           SelectContainer.Container := Container;
           SelectContainer.ShowModal();
-          Container := SelectContainer.Container;
           if ( mrCancel = SelectContainer.ModalResult ) then
             Break
+          else
+            Container := SelectContainer.Container;
         finally
           CryptReleaseContext( Result, 0 );
           Result := 0;

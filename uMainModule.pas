@@ -213,7 +213,7 @@ end;
 
 procedure TMainModule.aSelectCheckSignExecute(Sender: TObject);
 begin
-//
+// MultiCheckSign
 end;
 
 procedure TMainModule.aSelectCheckSignUpdate(Sender: TObject);
@@ -253,7 +253,7 @@ end;
 
 procedure TMainModule.aSettingExecute(Sender: TObject);
 begin
-//
+  SetSign.Execute( TSettingCommand.Create() as ICommand );
 end;
 
 procedure TMainModule.lvFilesSelectItem(Sender: TObject; Item: TListItem;

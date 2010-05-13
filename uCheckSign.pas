@@ -231,7 +231,7 @@ begin
     begin
       Result := CryptVerifySignature( hHash, @Sign[0],
         Length( Sign ), hKey, NIL, 0 );
-      IsError := not Result;
+      IsError := false;
     end;
   finally
     if ( hHash <> 0 ) then
