@@ -28,7 +28,6 @@ uses
 
 begin
   Application.Initialize;
-  Application.MainFormOnTaskbar := True;
   Application.Title := 'Подпись документов - ГУЗ «ЗабКДЦ»';
   Application.CreateForm(TMainModule, MainModule);
   Application.Run;

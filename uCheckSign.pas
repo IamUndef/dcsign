@@ -250,12 +250,15 @@ var
   Size : Integer;
 begin
   Result := '';
-  Size := CertGetNameString( pCert, CERT_NAME_SIMPLE_DISPLAY_TYPE,
-    0, NIL, NIL, 0 );
+  Size := CertNameToStr( PKCS_7_ASN_ENCODING or X509_ASN_ENCODING,
+    @pCert.pCertInfo.Subject,
+    CERT_SIMPLE_NAME_STR or CERT_NAME_STR_REVERSE_FLAG, NIL, 0 );
   if ( Size > 1 ) then
   begin
     SetLength( Result, Size );
-    if ( CertGetNameString( pCert, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0, NIL,
+    if ( CertNameToStr( PKCS_7_ASN_ENCODING or X509_ASN_ENCODING,
+        @pCert.pCertInfo.Subject,
+        CERT_SIMPLE_NAME_STR or CERT_NAME_STR_REVERSE_FLAG,
         @Result[1], Size ) = 0 ) then
       Result := '';
   end;
