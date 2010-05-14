@@ -12,7 +12,13 @@ type
           'Crypto-Pro GOST R 34.10-2001 Cryptographic Service Provider';
         DEFAULT_ALGID = 32798;
         DEFAULT_CONTAINER = '';
-        
+
+        SETTING_FILE = 'setsign.ini';
+        SIGN_SECTION = 'SIGN';
+        CSP_KEY = 'CSP';
+        ALGID_KEY = 'AlgId';
+        CONTAINER_KEY = 'Container';
+
     private
       type
         TKeyInfo = record
@@ -30,10 +36,12 @@ type
       CSPName : String;
       AlgId : Integer;
       Container : String;
-      
+
       procedure Execute( const Command : ISignCommand ); overload;
       procedure Execute( const Command : ISettingCommand ); overload;
 
+      procedure LoadSetting();
+      procedure SaveSetting();
       function InitCSP() : HCRYPTPROV;
       function GetCertificate( hProv : HCRYPTPROV ) : TKeyInfo;
       function GetChainCerts( pCert : PCCERT_CONTEXT ) : TBBytes;
@@ -47,6 +55,7 @@ type
       
     public
       constructor Create( const FileModel : IModule );
+      destructor Destroy(); override;
 
       function Execute( const Command : ICommand ) : Boolean; overload;
 
@@ -56,19 +65,31 @@ type
 
 implementation
 
-uses Controls, Dialogs, uCommands, uSetting, uSelectContainer;
+uses Controls, Dialogs, IniFiles, uCommands, uSetting, uSelectContainer;
 
 function GetInstance( const FileModel : IModule ) : IModule; export;
 begin
-  Result := TSetSign.Create( FileModel );
+  try
+    Result := TSetSign.Create( FileModel );
+  except
+    Result := NIL;
+  end;
 end;
 
 constructor TSetSign.Create( const FileModel: IModule );
 begin
+  inherited Create();
   Model := FileModel;
   CSPName := DEFAULT_CSP;
   AlgId := DEFAULT_ALGID;
   Container := DEFAULT_CONTAINER;
+  LoadSetting();
+end;
+
+destructor TSetSign.Destroy;
+begin
+  SaveSetting();
+  inherited;
 end;
 
 function TSetSign.Execute( const Command : ICommand ) : Boolean;
@@ -114,6 +135,69 @@ begin
   finally
     if Assigned( Setting ) then
       Setting.Free;
+  end;
+end;
+
+procedure TSetSign.LoadSetting();
+var
+  SettingFile : TMemIniFile;
+  AppFileName : String;
+begin
+  SettingFile := NIL;
+  SetLength( AppFileName, MAX_PATH );
+  if ( GetModuleFileName( 0, @AppFileName[1], MAX_PATH ) <> 0 ) then
+  begin
+    try
+      try
+        SettingFile := TMemIniFile.Create(
+          ExtractFilePath( AppFileName ) + SETTING_FILE );
+        CSPName :=
+          SettingFile.ReadString( SIGN_SECTION, CSP_KEY, DEFAULT_CSP );
+        AlgId :=
+          SettingFile.ReadInteger( SIGN_SECTION, ALGID_KEY, DEFAULT_ALGID );
+        Container :=
+          SettingFile.ReadString(SIGN_SECTION, CONTAINER_KEY, DEFAULT_CONTAINER );
+      except
+        CSPName := DEFAULT_CSP;
+        AlgId := DEFAULT_ALGID;
+        Container := DEFAULT_CONTAINER;
+        MessageDlg( 'Не удалось загрузить параметры подписи из файла "' +
+          ExtractFilePath( AppFileName ) + SETTING_FILE + '"!', mtError, [mbOK],
+          0 );
+      end;
+    finally
+      if Assigned( SettingFile ) then
+        SettingFile.Free;
+    end;
+  end;
+end;
+
+procedure TSetSign.SaveSetting();
+var
+  SettingFile : TMemIniFile;
+  AppFileName : String;
+begin
+  SettingFile := NIL;
+  SetLength( AppFileName, MAX_PATH );
+  if ( GetModuleFileName( 0, @AppFileName[1], MAX_PATH ) <> 0 ) then
+  begin
+    try
+      try
+        SettingFile := TMemIniFile.Create(
+          ExtractFilePath( AppFileName ) + SETTING_FILE );
+        SettingFile.WriteString( SIGN_SECTION, CSP_KEY, CSPName );
+        SettingFile.WriteInteger( SIGN_SECTION, ALGID_KEY, AlgId );
+        SettingFile.WriteString( SIGN_SECTION, CONTAINER_KEY, Container );
+        SettingFile.UpdateFile;
+      except
+        MessageDlg( 'Не удалось cохранить параметры подписи в файл "' +
+          ExtractFilePath( AppFileName ) + SETTING_FILE + '"!', mtError, [mbOK],
+          0 );
+      end;
+    finally
+      if Assigned( SettingFile ) then
+        SettingFile.Free;
+    end;
   end;
 end;
 

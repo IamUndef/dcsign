@@ -24,6 +24,7 @@ implementation
 
 constructor TSimpleCommand.Create( const FileName : String );
 begin
+  inherited Create();
   FileName_ := FileName;
 end;
 

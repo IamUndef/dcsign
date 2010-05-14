@@ -42,6 +42,7 @@ uses Windows, Dialogs, uSignContext;
 
 constructor TFileModel.Create( MainModule: TMainModule );
 begin
+  inherited Create();
   MainModule_ := MainModule;
 end;
 

@@ -50,6 +50,7 @@ uses Windows, Classes;
 
 constructor TSignContext.Create();
 begin
+  inherited;
   CSPName_ := '';
   AlgId_ := 0;
   DateTime_ := 0;
@@ -59,6 +60,7 @@ end;
 
 constructor TSignContext.Create( const Buffer: TBytes );
 begin
+  inherited Create();
   UnPack( Buffer );
 end;
 

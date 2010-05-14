@@ -43,6 +43,7 @@ uses Windows, Dialogs, JwaCryptUIApi, JwaWinError, uISignContext;
 
 constructor TCheckSign.Create( const FileModel : IFileModel );
 begin
+  inherited Create();
   Model := FileModel;
   CertSubject_ := '';
   DateTime_ := 0; 

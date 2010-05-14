@@ -112,7 +112,12 @@ begin
   begin
     @GetInstance := GetProcAddress( SetSignDLL, SETSIGN_FUNC );
     if Assigned( @GetInstance ) then
-      SetSign := GetInstance( FileModel as IModule )
+    begin
+      SetSign := GetInstance( FileModel as IModule );
+      if not Assigned( SetSign ) then
+        MessageDlg( 'Не удалось инициализировать модуль подписи!',
+          mtError, [mbOK], 0 );
+    end
     else
       FreeLibrary( SetSignDLL );
   end;
@@ -236,7 +241,7 @@ end;
 
 procedure TMainModule.aDelSignExecute(Sender: TObject);
 begin
-  if ( IDYES =  Application.MessageBox(
+  if ( IDYES = Application.MessageBox(
       'Вы действительно хотите удалить подпись?', 'Удаление подписи',
       MB_YESNO + MB_ICONQUESTION + MB_DEFBUTTON2 ) ) then
     if ( lvFiles.SelCount = 1 ) then
