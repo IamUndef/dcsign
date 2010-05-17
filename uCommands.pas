@@ -2,14 +2,14 @@ unit uCommands;
 
 interface
 
-uses uSimpleCommand, uICommands;
+uses uICommands, uCommand, uSimpleCommand;
 
 type
 
   TSignCommand = class( TSimpleCommand, ISignCommand )
   end;
 
-  TSettingCommand = class( TInterfacedObject, ICommand, ISettingCommand )
+  TSettingCommand = class( TCommand, ISettingCommand )
   end;
 
 implementation

@@ -2,11 +2,11 @@ unit uSimpleCommand;
 
 interface
 
-uses uICommands;
+uses uICommands, uCommand;
 
 type
 
- TSimpleCommand = class( TInterfacedObject, ICommand, ISimpleCommand )
+ TSimpleCommand = class( TCommand, ISimpleCommand )
     private
       FileName_ : String;
 

@@ -22,7 +22,8 @@ uses
   JwaWinDLLNames in 'common\JwaWinDLLNames.pas',
   JwaWinError in 'common\JwaWinError.pas',
   JwaWinNT in 'common\JwaWinNT.pas',
-  JwaWinType in 'common\JwaWinType.pas';
+  JwaWinType in 'common\JwaWinType.pas',
+  uCommand in 'common\uCommand.pas';
 
 {$R *.res}
 

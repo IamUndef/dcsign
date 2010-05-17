@@ -14,7 +14,6 @@ type
         FILE_SIGN_FLAG = 1;
         
     private
-      MainModule_ : TMainModule;
       Directory_ : String;
 
       procedure Execute( const Command : IReadCommand ); overload;
@@ -23,15 +22,12 @@ type
       procedure CreateSign( const FileName : String; const Buffer : TBytes );
 
     public
-      constructor Create( MainModule : TMainModule );
-      destructor Destroy(); override;
-
       function Execute( const Command  : ICommand ) : Boolean; overload;
 
-      procedure Open( const Directory : String );
+      procedure Open( const Directory : String; Files : TStrings );
       function Read( const FileName : String ) : TBytes;
       function ReadSign( const FileName : String ) : ISignContext;
-      function DeleteSign( const FileName : String ) : Boolean;
+      procedure DeleteSign( const FileName : String );
       //MultiDeleteSign
 
   end;
@@ -39,17 +35,6 @@ type
 implementation
 
 uses Windows, Dialogs, uSignContext;
-
-constructor TFileModel.Create( MainModule: TMainModule );
-begin
-  inherited Create();
-  MainModule_ := MainModule;
-end;
-
-destructor TFileModel.Destroy();
-begin
-//
-end;
 
 function TFileModel.Execute( const Command: ICommand ) : Boolean;
 begin
@@ -65,7 +50,7 @@ begin
     Result := true;
   except
     on E : Exception do
-      MessageDlg( E.Message,  mtError, [mbOK], 0 );
+      Command.ExceptionMsg := E.Message;
   end;
 end;
 
@@ -79,38 +64,29 @@ begin
   CreateSign( Command.FileName, Command.SignContext.Buffer );
 end;
 
-procedure TFileModel.Open( const Directory : String );
+procedure TFileModel.Open( const Directory : String; Files : TStrings );
 var
   Index : Integer;
   SearchRec : TSearchRec;
-  FilesInfo : TStringList;
   OpenedDir : String;
 begin
   OpenedDir := Directory;
   if ( OpenedDir[ Length( OpenedDir ) ] <> '\' ) then
     OpenedDir := OpenedDir + '\';
-  FilesInfo := NIL;
-  try
-    FilesInfo := TStringList.Create;
-    if ( FindFirst( OpenedDir + '*.*', 0, SearchRec ) = 0 ) then
-    begin
-      try
-        repeat
-          if ( ExtractFileExt( SearchRec.Name ) <> SIGN_EXT ) then
-          begin
-            Index := FilesInfo.Add( SearchRec.Name );
-            if FileExists( OpenedDir + SearchRec.Name + SIGN_EXT ) then
-              FilesInfo.Objects[Index] := TObject( FILE_SIGN_FLAG );
-          end;
-        until FindNext( SearchRec ) <> 0;
-      finally
-        SysUtils.FindClose( SearchRec );
-      end;
+  if ( FindFirst( OpenedDir + '*.*', 0, SearchRec ) = 0 ) then
+  begin
+    try
+      repeat
+        if ( ExtractFileExt( SearchRec.Name ) <> SIGN_EXT ) then
+        begin
+          Index := Files.Add( SearchRec.Name );
+          if FileExists( OpenedDir + SearchRec.Name + SIGN_EXT ) then
+            Files.Objects[Index] := TObject( FILE_SIGN_FLAG );
+        end;
+      until FindNext( SearchRec ) <> 0;
+    finally
+      SysUtils.FindClose( SearchRec );
     end;
-    MainModule_.Refresh( FilesInfo );
-  finally
-    if Assigned( FilesInfo ) then
-      FilesInfo.Free;
   end;
   Directory_ := OpenedDir;
 end;
@@ -170,14 +146,12 @@ begin
   end;
 end;
 
-function TFileModel.DeleteSign( const FileName : String ) : Boolean;
+procedure TFileModel.DeleteSign( const FileName : String );
 begin
   FileSetAttr( Directory_ + FileName + SIGN_EXT, 0 );
-  Result := SysUtils.DeleteFile( Directory_ + FileName + SIGN_EXT );
-  if not Result then
+  if not SysUtils.DeleteFile( Directory_ + FileName + SIGN_EXT ) then
     raise Exception.Create( 'Не удалось удалить файл "' + Directory_ +
       FileName + SIGN_EXT + '"!' );
-  MainModule_.Refresh( FileName, false );
 end;
 
 procedure TFileModel.CreateSign( const FileName : String; const Buffer : TBytes );
@@ -197,7 +171,6 @@ begin
     if Assigned( FileStream ) then
       FileStream.Free;
   end;
-  MainModule_.Refresh( FileName );
 end;
 
 end.

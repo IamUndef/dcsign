@@ -8,6 +8,12 @@ type
 
   ICommand = interface( IInterface )
     ['{44159665-1DCC-438D-8059-ED8EA035C467}']
+
+    function GetExceptionMsg() : String;
+    procedure SetExceptionMsg( Msg : String );
+
+    property ExceptionMsg : String read GetExceptionMsg write SetExceptionMsg;
+
   end;
 
   ISimpleCommand = interface( ICommand )

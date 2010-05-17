@@ -50,7 +50,7 @@ type
       function MergeBuffer( LeftBuf : Pointer; LeftBufSize : Integer;
         RightBuf : Pointer; RightBufSize : Integer ) : TBytes;
 
-      function SingleSign( const Command : IReadCommand ) : Boolean;
+      procedure SingleSign( const Command : IReadCommand );
       // MultiSign
       
     public
@@ -105,7 +105,7 @@ begin
     Result := true;
   except
     on E : Exception do
-      MessageDlg( E.Message,  mtError, [mbOK], 0 );
+      Command.ExceptionMsg := E.Message;
   end;
 end;
 
@@ -115,7 +115,9 @@ var
 begin
   ReadCmd := TReadCommand.Create( Command.FileName );
   if Model.Execute( ReadCmd as ICommand ) then
-    SingleSign( ReadCmd );
+    SingleSign( ReadCmd )
+  else
+    raise Exception.Create( ReadCmd.ExceptionMsg );
 end;
 
 procedure TSetSign.Execute( const Command : ISettingCommand );
@@ -156,7 +158,8 @@ begin
         AlgId :=
           SettingFile.ReadInteger( SIGN_SECTION, ALGID_KEY, DEFAULT_ALGID );
         Container :=
-          SettingFile.ReadString(SIGN_SECTION, CONTAINER_KEY, DEFAULT_CONTAINER );
+          SettingFile.ReadString( SIGN_SECTION, CONTAINER_KEY,
+            DEFAULT_CONTAINER );
       except
         CSPName := DEFAULT_CSP;
         AlgId := DEFAULT_ALGID;
@@ -439,18 +442,12 @@ end;
 function TSetSign.MergeBuffer( LeftBuf : Pointer; LeftBufSize : Integer;
   RightBuf : Pointer; RightBufSize : Integer ) : TBytes;
 begin
-  Result := NIL;
-  try
-    SetLength( Result, LeftBufSize + RightBufSize );
-    CopyMemory( Pointer( @Result[0] ), LeftBuf, LeftBufSize );
-    CopyMemory( Pointer( @Result[LeftBufSize] ), RightBuf, RightBufSize );
-  except
-    on E : Exception do
-      MessageDlg( E.Message,  mtError, [mbOK], 0 );  
-  end;
+  SetLength( Result, LeftBufSize + RightBufSize );
+  CopyMemory( Pointer( @Result[0] ), LeftBuf, LeftBufSize );
+  CopyMemory( Pointer( @Result[LeftBufSize] ), RightBuf, RightBufSize );
 end;
 
-function TSetSign.SingleSign( const Command : IReadCommand ) : Boolean;
+procedure TSetSign.SingleSign( const Command : IReadCommand );
 var
   hProv : HCRYPTPROV;
   KeyInfo : TKeyInfo;
@@ -458,7 +455,6 @@ var
   SignInfo : TSignInfo;
   CreateSignCmd : ICreateSignCommand;
 begin
-  Result := false;
   if Assigned( Command.Buffer ) then
   begin
     hProv := 0;
@@ -479,8 +475,8 @@ begin
         CreateSignCmd.SignContext.DateTime := SignInfo.DateTime;
         CreateSignCmd.SignContext.Sign := SignInfo.Sign;
         CreateSignCmd.SignContext.Certificates := ChainCerts;
-        Model.Execute( CreateSignCmd as ICommand );
-        Result := true;
+        if not Model.Execute( CreateSignCmd as ICommand ) then
+          raise Exception.Create( CreateSignCmd.ExceptionMsg );
       end;
     finally
       if Assigned( KeyInfo.pCert ) then

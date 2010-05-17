@@ -31,7 +31,8 @@ uses
   uSimpleCommand in '..\common\uSimpleCommand.pas',
   uISignContext in '..\common\uISignContext.pas',
   uSelectContainer in 'uSelectContainer.pas' {SelectContainer},
-  uSetting in 'uSetting.pas' {Setting};
+  uSetting in 'uSetting.pas' {Setting},
+  uCommand in '..\common\uCommand.pas';
 
 exports
   GetInstance;

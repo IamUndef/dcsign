@@ -79,11 +79,6 @@ type
     FileModel : IFileModel;
     CheckSign : ICheckSign;
     SetSign : IModule;
-
-  public
-    procedure Refresh( FilesInfo : TStringList ); overload;
-    procedure Refresh( FileName : String; IsSign : Boolean = true ); overload;
-
   end;
 
 var
@@ -105,7 +100,7 @@ var
   GetInstance : TGetInstance;
 
 begin
-  FileModel := TFileModel.Create( Self );
+  FileModel := TFileModel.Create();
   CheckSign := TCheckSign.Create( FileModel );
   SetSignDLL := LoadLibrary( SETSIGN_DLL );
   if ( SetSignDLL <> 0 ) then
@@ -147,11 +142,31 @@ end;
 
 procedure TMainModule.aOpenExecute(Sender: TObject);
 var
+  i : Integer;
   Dir : String;
+  Files : TStringList;
+  Item : TListItem; 
 begin
   if ( SelectDirectory( 'Выберите папку', '', Dir ) ) then
   begin
-    FileModel.Open( Dir );
+    Files := NIL;
+    try
+      Files := TStringList.Create();
+      FileModel.Open( Dir, Files );
+      lvFiles.Clear;
+      for i := 0 to Files.Count - 1 do
+      begin
+        Item := lvFiles.Items.Add();
+        if Assigned( Files.Objects[i] ) then
+          Item.ImageIndex := 0
+        else
+          Item.ImageIndex := -1;
+        Item.SubItems.Add( Files.Strings[i] );
+      end;
+    finally
+      if Assigned( Files ) then
+        Files.Free;
+    end;
   end;
 end;
 
@@ -228,9 +243,24 @@ begin
 end;
 
 procedure TMainModule.aSetSignExecute(Sender: TObject);
+var
+  SignCommand : ISignCommand;
 begin
-  SetSign.Execute( TSignCommand.Create(
-    lvFiles.Items[lvFiles.ItemIndex].SubItems[0] ) as ICommand );
+  if ( lvFiles.SelCount = 1 ) then
+  begin
+    SignCommand := TSignCommand.Create(
+      lvFiles.Items[lvFiles.ItemIndex].SubItems[0] );
+    if not SetSign.Execute( SignCommand as ICommand ) then
+      MessageDlg( SignCommand.ExceptionMsg,  mtError, [mbOK], 0)
+    else
+    begin
+      lvFiles.Items[lvFiles.ItemIndex].ImageIndex := 0;
+      aCheckSign.Execute();
+      MessageDlg( 'Файл успешно подписан!',  mtInformation, [mbOK], 0 )
+    end;
+  end
+  else if ( lvFiles.SelCount > 1 ) then
+    // MultiSign
 end;
 
 procedure TMainModule.aSetSignUpdate(Sender: TObject);
@@ -241,12 +271,19 @@ end;
 
 procedure TMainModule.aDelSignExecute(Sender: TObject);
 begin
-  if ( IDYES = Application.MessageBox(
-      'Вы действительно хотите удалить подпись?', 'Удаление подписи',
-      MB_YESNO + MB_ICONQUESTION + MB_DEFBUTTON2 ) ) then
-    if ( lvFiles.SelCount = 1 ) then
-      FileModel.DeleteSign( lvFiles.Items[lvFiles.ItemIndex].SubItems[0] )
-    else if ( lvFiles.SelCount > 1 ) then
+  if ( lvFiles.SelCount = 1 ) then
+  begin
+    if ( IDYES = Application.MessageBox(
+        'Вы действительно хотите удалить подпись?', 'Удаление подписи',
+        MB_YESNO + MB_ICONQUESTION + MB_DEFBUTTON2 ) ) then
+    begin
+      FileModel.DeleteSign( lvFiles.Items[lvFiles.ItemIndex].SubItems[0] );
+      lvFiles.Items[lvFiles.ItemIndex].ImageIndex := -1;
+      aCheckSign.Execute();
+      MessageDlg( 'Подпись успешно удалена!',  mtInformation, [mbOK], 0 );
+    end;
+  end
+  else if ( lvFiles.SelCount > 1 ) then
     // MultiDeleteSign
 end;
 
@@ -275,44 +312,6 @@ begin
       Item.Selected := false;
   end else if ( Item.ImageIndex = 0 ) then
     aCheckSign.Execute();
-end;
-
-procedure TMainModule.Refresh( FilesInfo : TStringList );
-var
-  i : Integer;
-  Item : TListItem;
-begin
-  lvFiles.Clear;
-  for i := 0 to FilesInfo.Count - 1 do
-  begin
-    Item := lvFiles.Items.Add();
-    if Assigned( FilesInfo.Objects[i] ) then
-      Item.ImageIndex := 0
-    else
-      Item.ImageIndex := -1;
-    Item.SubItems.Add( FilesInfo.Strings[i] );
-  end;
-end;
-
-procedure TMainModule.Refresh( FileName: String; IsSign : Boolean = true );
-var
-  i : Integer;
-begin
-  for i := 0 to lvFiles.Items.Count - 1 do
-    if ( lvFiles.Items[i].SubItems.Strings[0] = FileName ) then
-    begin
-      if IsSign then
-        lvFiles.Items[i].ImageIndex := 0
-      else
-        lvFiles.Items[i].ImageIndex := -1;
-      Break;
-    end;
-  aCheckSign.Execute();
-  lvFiles.Invalidate();
-  if IsSign then
-    MessageDlg( 'Файл успешно подписан!',  mtInformation, [mbOK], 0 )
-  else
-    MessageDlg( 'Подпись успешно удалена!',  mtInformation, [mbOK], 0 );
 end;
 
 end.

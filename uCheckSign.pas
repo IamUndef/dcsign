@@ -267,15 +267,9 @@ end;
 function TCheckSign.MergeBuffer( LeftBuf : Pointer; LeftBufSize : Integer;
   RightBuf : Pointer; RightBufSize : Integer ) : TBytes;
 begin
-  Result := NIL;
-  try
-    SetLength( Result, LeftBufSize + RightBufSize );
-    CopyMemory( Pointer( @Result[0] ), LeftBuf, LeftBufSize );
-    CopyMemory( Pointer( @Result[LeftBufSize] ), RightBuf, RightBufSize );
-  except
-    on E : Exception do
-      MessageDlg( E.Message,  mtError, [mbOK], 0 );  
-  end;
+  SetLength( Result, LeftBufSize + RightBufSize );
+  CopyMemory( Pointer( @Result[0] ), LeftBuf, LeftBufSize );
+  CopyMemory( Pointer( @Result[LeftBufSize] ), RightBuf, RightBufSize );
 end;
 
 end.
