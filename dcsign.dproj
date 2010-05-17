@@ -50,39 +50,6 @@
       
       
       
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
       <Excluded_Packages Name="$(BDS)\bin\bcboffice2k100.bpl">CodeGear C++Builder Office 2000 Servers Package</Excluded_Packages>
       <Excluded_Packages Name="$(BDS)\bin\dcloffice2k100.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
       <Excluded_Packages Name="$(BDS)\bin\dclofficexp100.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
@@ -104,6 +71,7 @@
     <DCCReference Include="common\uCommand.pas" />
     <DCCReference Include="common\uICommands.pas" />
     <DCCReference Include="common\uIModule.pas" />
+    <DCCReference Include="common\uIMultiViewer.pas" />
     <DCCReference Include="common\uISignContext.pas">
       <Form>$R *.res</Form>
     </DCCReference>
@@ -118,6 +86,10 @@
     <DCCReference Include="uIFileModel.pas" />
     <DCCReference Include="uMainModule.pas">
       <Form>MainModule</Form>
+    </DCCReference>
+    <DCCReference Include="uMultiViewer.pas" />
+    <DCCReference Include="uMultiViewerForm.pas">
+      <Form>MultiViewerForm</Form>
     </DCCReference>
   </ItemGroup>
 </Project>

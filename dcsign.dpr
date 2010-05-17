@@ -23,7 +23,10 @@ uses
   JwaWinError in 'common\JwaWinError.pas',
   JwaWinNT in 'common\JwaWinNT.pas',
   JwaWinType in 'common\JwaWinType.pas',
-  uCommand in 'common\uCommand.pas';
+  uCommand in 'common\uCommand.pas',
+  uMultiViewerForm in 'uMultiViewerForm.pas' {MultiViewerForm},
+  uIMultiViewer in 'common\uIMultiViewer.pas',
+  uMultiViewer in 'uMultiViewer.pas';
 
 {$R *.res}
 

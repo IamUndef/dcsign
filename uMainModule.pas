@@ -72,13 +72,24 @@ type
       SETSIGN_DLL = 'dcsetsign.dll';
       SETSIGN_FUNC = 'GetInstance';
 
+      UNSIGN_IMAGE_INDEX = -1;
+      SIGN_IMAGE_INDEX = 0;
+      
       SIGN_VALID = 'ÄÅÉÑÒÂÈÒÅËÜÍÀ';
       SIGN_INVALID = 'ÍÅÄÅÉÑÒÂÈÒÅËÜÍÀ';
+
+  private
+    type
+      TRefreshType = ( rtOpen, rtSign, rtDelete );
 
   private
     FileModel : IFileModel;
     CheckSign : ICheckSign;
     SetSign : IModule;
+
+  public
+    procedure Refresh( Files : TStrings; RefreshType : TRefreshType = rtOpen );
+
   end;
 
 var
@@ -88,7 +99,9 @@ implementation
 
 {$R *.dfm}
 
-uses FileCtrl, uICommands, uFileModel, uCheckSign, uCommands;
+uses
+  FileCtrl, uICommands, uIMultiViewer, uFileModel, uCheckSign, uCommands,
+  uMultiViewer;
 
 procedure TMainModule.FormCreate(Sender: TObject);
 
@@ -142,10 +155,8 @@ end;
 
 procedure TMainModule.aOpenExecute(Sender: TObject);
 var
-  i : Integer;
   Dir : String;
   Files : TStringList;
-  Item : TListItem; 
 begin
   if ( SelectDirectory( 'Âûáåðèòå ïàïêó', '', Dir ) ) then
   begin
@@ -153,19 +164,10 @@ begin
     try
       Files := TStringList.Create();
       FileModel.Open( Dir, Files );
-      lvFiles.Clear;
-      for i := 0 to Files.Count - 1 do
-      begin
-        Item := lvFiles.Items.Add();
-        if Assigned( Files.Objects[i] ) then
-          Item.ImageIndex := 0
-        else
-          Item.ImageIndex := -1;
-        Item.SubItems.Add( Files.Strings[i] );
-      end;
+      Refresh( Files );
     finally
       if Assigned( Files ) then
-        Files.Free;
+        Files.Free();
     end;
   end;
 end;
@@ -193,7 +195,7 @@ end;
 procedure TMainModule.aViewCertUpdate(Sender: TObject);
 begin
   aViewCert.Enabled := ( lvFiles.SelCount = 1 ) and
-    ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = 0 );
+    ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = SIGN_IMAGE_INDEX );
 end;
 
 procedure TMainModule.aCheckSignExecute(Sender: TObject);
@@ -220,7 +222,7 @@ end;
 procedure TMainModule.aCheckSignUpdate(Sender: TObject);
 begin
   if ( ( lvFiles.SelCount = 1 ) and
-      ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = 0 ) ) then
+      ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = SIGN_IMAGE_INDEX ) ) then
     aCheckSign.Enabled := true
   else
   begin
@@ -239,34 +241,53 @@ end;
 procedure TMainModule.aSelectCheckSignUpdate(Sender: TObject);
 begin
   aSelectCheckSign.Enabled := ( lvFiles.SelCount > 1 ) and
-    ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = 0 );
+    ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = SIGN_IMAGE_INDEX );
 end;
 
 procedure TMainModule.aSetSignExecute(Sender: TObject);
 var
-  SignCommand : ISignCommand;
+  SignCmd : ISignCommand;
+  MultiSignCmd : IMultiSignCommand;
+  Item : TListItem; 
 begin
-  if ( lvFiles.SelCount = 1 ) then
-  begin
-    SignCommand := TSignCommand.Create(
-      lvFiles.Items[lvFiles.ItemIndex].SubItems[0] );
-    if not SetSign.Execute( SignCommand as ICommand ) then
-      MessageDlg( SignCommand.ExceptionMsg,  mtError, [mbOK], 0)
-    else
+  Enabled := false;
+  try
+    if ( lvFiles.SelCount = 1 ) then
     begin
-      lvFiles.Items[lvFiles.ItemIndex].ImageIndex := 0;
-      aCheckSign.Execute();
-      MessageDlg( 'Ôàéë óñïåøíî ïîäïèñàí!',  mtInformation, [mbOK], 0 )
+      SignCmd := TSignCommand.Create(
+        lvFiles.Items[lvFiles.ItemIndex].SubItems[0] );
+      if not SetSign.Execute( SignCmd as ICommand ) then
+        MessageDlg( SignCmd.ExceptionMsg,  mtError, [mbOK], 0 )
+      else
+      begin
+        lvFiles.Items[lvFiles.ItemIndex].ImageIndex := SIGN_IMAGE_INDEX;
+        aCheckSign.Execute();
+        MessageDlg( 'Ôàéë óñïåøíî ïîäïèñàí!',  mtInformation, [mbOK], 0 )
+      end;
+    end
+    else if ( lvFiles.SelCount > 1 ) then
+    begin
+      MultiSignCmd := TMultiSignCommand.Create();
+      Item := lvFiles.Selected;
+      while ( Item <> NIl ) do
+      begin
+        MultiSignCmd.Files.Add( Item.SubItems[0] );
+        Item := lvFiles.GetNextItem( Item, sdAll, [isSelected] );
+      end;
+      if not SetSign.Execute( MultiSignCmd as ICommand ) then
+        MessageDlg( MultiSignCmd.ExceptionMsg,  mtError, [mbOK], 0 )
+      else
+        Refresh( MultiSignCmd.Files, rtSign );
     end;
-  end
-  else if ( lvFiles.SelCount > 1 ) then
-    // MultiSign
+  finally
+    Enabled := true;
+  end;
 end;
 
 procedure TMainModule.aSetSignUpdate(Sender: TObject);
 begin
   aSetSign.Enabled := Assigned( SetSign ) and ( lvFiles.SelCount >= 1 ) and
-      ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = -1 );
+      ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = UNSIGN_IMAGE_INDEX );
 end;
 
 procedure TMainModule.aDelSignExecute(Sender: TObject);
@@ -278,7 +299,7 @@ begin
         MB_YESNO + MB_ICONQUESTION + MB_DEFBUTTON2 ) ) then
     begin
       FileModel.DeleteSign( lvFiles.Items[lvFiles.ItemIndex].SubItems[0] );
-      lvFiles.Items[lvFiles.ItemIndex].ImageIndex := -1;
+      lvFiles.Items[lvFiles.ItemIndex].ImageIndex := UNSIGN_IMAGE_INDEX;
       aCheckSign.Execute();
       MessageDlg( 'Ïîäïèñü óñïåøíî óäàëåíà!',  mtInformation, [mbOK], 0 );
     end;
@@ -290,7 +311,7 @@ end;
 procedure TMainModule.aDelSignUpdate(Sender: TObject);
 begin
   aDelSign.Enabled := Assigned( SetSign ) and ( lvFiles.SelCount >= 1 ) and
-    ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = 0 );
+    ( lvFiles.Items[lvFiles.ItemIndex].ImageIndex = SIGN_IMAGE_INDEX );
 end;
 
 procedure TMainModule.aSettingExecute(Sender: TObject);
@@ -310,8 +331,44 @@ begin
       aCheckSign.Execute()
     else
       Item.Selected := false;
-  end else if ( Item.ImageIndex = 0 ) then
+  end else if ( Item.ImageIndex = SIGN_IMAGE_INDEX ) then
     aCheckSign.Execute();
+end;
+
+procedure TMainModule.Refresh( Files: TStrings;
+  RefreshType : TRefreshType = rtOpen  );
+var
+  i : Integer;
+  Item : TListItem;
+begin
+  if ( RefreshType = rtOpen ) then
+  begin
+    lvFiles.Clear;
+    for i := 0 to Files.Count - 1 do
+    begin
+      Item := lvFiles.Items.Add();
+      if Assigned( Files.Objects[i] ) then
+        Item.ImageIndex := SIGN_IMAGE_INDEX
+      else
+        Item.ImageIndex := UNSIGN_IMAGE_INDEX;
+      Item.SubItems.Add( Files.Strings[i] );
+    end;
+  end else
+  begin
+    Item := lvFiles.Selected;
+    while ( Item <> NIl ) do
+    begin
+      if ( Files.IndexOf( Item.SubItems[0] ) <> - 1 ) then
+      begin
+        if ( RefreshType = rtSign ) then
+          Item.ImageIndex := SIGN_IMAGE_INDEX
+        else
+          Item.ImageIndex := UNSIGN_IMAGE_INDEX;
+      end else
+        Item.Selected := false;
+      Item := lvFiles.GetNextItem( Item, sdAll, [isSelected] );
+    end;
+  end;
 end;
 
 end.

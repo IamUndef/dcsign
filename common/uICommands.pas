@@ -2,7 +2,7 @@ unit uICommands;
 
 interface
 
-uses SysUtils, uISignContext;
+uses Classes, SysUtils, uIMultiViewer, uISignContext;
 
 type
 
@@ -27,6 +27,17 @@ type
 
   ISignCommand = interface( ISimpleCommand )
     ['{0C2DA0D3-56FD-4AA5-A13C-E77C56FB4A7B}']
+  end;
+
+  IMultiSignCommand = interface( ICommand )
+    ['{4204EF62-6E40-4742-BFE0-38733142267D}']
+
+    function GetViewer() : IMultiViewer;
+    function GetFiles() : TStrings;
+
+    property Viewer : IMultiViewer read GetViewer; 
+    property Files : TStrings read GetFiles;
+
   end;
 
   IReadCommand = interface( ISimpleCommand )

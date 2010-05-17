@@ -19,6 +19,10 @@ type
         ALGID_KEY = 'AlgId';
         CONTAINER_KEY = 'Container';
 
+        MULTI_RESULT_CAPTION = 'Подпись файлов';
+        MULTI_RESULT_MSG = 'Подпись файлов завершена!';
+        MULTI_RESULT_SUCC = 'Подписан';
+
     private
       type
         TKeyInfo = record
@@ -38,6 +42,7 @@ type
       Container : String;
 
       procedure Execute( const Command : ISignCommand ); overload;
+      procedure Execute( const Command : IMultiSignCommand ); overload;
       procedure Execute( const Command : ISettingCommand ); overload;
 
       procedure LoadSetting();
@@ -51,7 +56,7 @@ type
         RightBuf : Pointer; RightBufSize : Integer ) : TBytes;
 
       procedure SingleSign( const Command : IReadCommand );
-      // MultiSign
+      procedure MultiSign( const Command : IMultiSignCommand );
       
     public
       constructor Create( const FileModel : IModule );
@@ -65,7 +70,9 @@ type
 
 implementation
 
-uses Controls, Dialogs, IniFiles, uCommands, uSetting, uSelectContainer;
+uses
+  Controls, Dialogs, IniFiles, uIMultiViewer, uCommands, uSetting,
+  uSelectContainer;
 
 function GetInstance( const FileModel : IModule ) : IModule; export;
 begin
@@ -98,6 +105,8 @@ begin
   try
     if Supports( Command, ISignCommand ) then
       Execute( Command as ISignCommand )
+    else if Supports( Command, IMultiSignCommand ) then
+      Execute( Command as IMultiSignCommand )
     else if Supports( Command, ISettingCommand ) then
       Execute( Command as ISettingCommand )
     else
@@ -120,6 +129,11 @@ begin
     raise Exception.Create( ReadCmd.ExceptionMsg );
 end;
 
+procedure TSetSign.Execute( const Command : IMultiSignCommand );
+begin
+  MultiSign( Command );
+end;
+
 procedure TSetSign.Execute( const Command : ISettingCommand );
 var
   Setting : TSetting;
@@ -136,7 +150,7 @@ begin
     end;
   finally
     if Assigned( Setting ) then
-      Setting.Free;
+      Setting.Free();
   end;
 end;
 
@@ -170,7 +184,7 @@ begin
       end;
     finally
       if Assigned( SettingFile ) then
-        SettingFile.Free;
+        SettingFile.Free();
     end;
   end;
 end;
@@ -199,7 +213,7 @@ begin
       end;
     finally
       if Assigned( SettingFile ) then
-        SettingFile.Free;
+        SettingFile.Free();
     end;
   end;
 end;
@@ -250,7 +264,7 @@ begin
     end;
   finally
     if Assigned( SelectContainer ) then
-      SelectContainer.Free;
+      SelectContainer.Free();
   end;
   if ( Result = 0 ) then
     raise Exception.Create( 'Не удалось инициализировать криптопровайдер - "' +
@@ -410,33 +424,30 @@ var
   Size : DWORD;
 begin
   Result.Sign := NIL;
-  if Assigned( Buffer ) then
+  if CryptCreateHash( hProv, AlgId, 0, 0, hHash ) then
   begin
-    if CryptCreateHash( hProv, AlgId, 0, 0, hHash ) then
-    begin
-      try
-        Result.DateTime := Now();
-        HashData := MergeBuffer( Pointer( @Buffer[0] ), Length( Buffer ),
-          Pointer( @Result.DateTime ), SizeOf( TDateTime ) );
-        if CryptHashData( hHash, @HashData[0], Length( HashData ), 0 ) then
+    try
+      Result.DateTime := Now();
+      HashData := MergeBuffer( Pointer( @Buffer[0] ), Length( Buffer ),
+        Pointer( @Result.DateTime ), SizeOf( TDateTime ) );
+      if CryptHashData( hHash, @HashData[0], Length( HashData ), 0 ) then
+      begin
+        Size := 0;
+        CryptSignHash( hHash, KeyType, NIL, 0, NIL, Size );
+        if ( Size <> 0 ) then
         begin
-          Size := 0;
-          CryptSignHash( hHash, KeyType, NIL, 0, NIL, Size );
-          if ( Size <> 0 ) then
-          begin
-            SetLength( Result.Sign, Size );
-            if not CryptSignHash( hHash, KeyType, NIL, 0, @Result.Sign[0],
-                Size ) then
-              Result.Sign := NIL;
-          end;
+          SetLength( Result.Sign, Size );
+          if not CryptSignHash( hHash, KeyType, NIL, 0, @Result.Sign[0],
+              Size ) then
+            Result.Sign := NIL;
         end;
-      finally
-        CryptDestroyHash( hHash );
       end;
+    finally
+      CryptDestroyHash( hHash );
     end;
-    if not Assigned( Result.Sign ) then
-      raise Exception.Create( 'Не удалось подписать данные!' );
   end;
+  if not Assigned( Result.Sign ) then
+    raise Exception.Create( 'Не удалось подписать данные!' );
 end;
 
 function TSetSign.MergeBuffer( LeftBuf : Pointer; LeftBufSize : Integer;
@@ -467,23 +478,82 @@ begin
         Pointer( @Command.FileName[1] ),
         Length( Command.FileName ), Pointer( @Command.Buffer[0] ),
         Length( Command.Buffer ) ) );
-      if Assigned( SignInfo.Sign ) then
-      begin
-        CreateSignCmd := TCreateSignCommand.Create( Command.FileName );
-        CreateSignCmd.SignContext.CSPName := CSPName;
-        CreateSignCmd.SignContext.AlgId := AlgId;
-        CreateSignCmd.SignContext.DateTime := SignInfo.DateTime;
-        CreateSignCmd.SignContext.Sign := SignInfo.Sign;
-        CreateSignCmd.SignContext.Certificates := ChainCerts;
-        if not Model.Execute( CreateSignCmd as ICommand ) then
-          raise Exception.Create( CreateSignCmd.ExceptionMsg );
-      end;
+      CreateSignCmd := TCreateSignCommand.Create( Command.FileName );
+      CreateSignCmd.SignContext.CSPName := CSPName;
+      CreateSignCmd.SignContext.AlgId := AlgId;
+      CreateSignCmd.SignContext.DateTime := SignInfo.DateTime;
+      CreateSignCmd.SignContext.Sign := SignInfo.Sign;
+      CreateSignCmd.SignContext.Certificates := ChainCerts;
+      if not Model.Execute( CreateSignCmd as ICommand ) then
+        raise Exception.Create( CreateSignCmd.ExceptionMsg );
     finally
       if Assigned( KeyInfo.pCert ) then
         CertFreeCertificateContext( KeyInfo.pCert );
       if ( hProv <> 0 ) then
         CryptReleaseContext( hProv, 0 );
     end;
+  end;
+end;
+
+procedure TSetSign.MultiSign( const Command : IMultiSignCommand );
+var
+  i : Integer;
+  hProv : HCRYPTPROV;
+  KeyInfo : TKeyInfo;
+  ChainCerts : TBBytes;
+  SignInfo : TSignInfo;
+  ReadCmd : IReadCommand;
+  CreateSignCmd : ICreateSignCommand;
+begin
+  hProv := 0;
+  KeyInfo.pCert := NIL;
+  try
+    hProv := InitCSP();
+    KeyInfo := GetCertificate( hProv );
+    ChainCerts := GetChainCerts( KeyInfo.pCert );
+    Command.Viewer.Show( MULTI_RESULT_CAPTION );
+    try
+      i := 0;
+      while ( i < Command.Files.Count ) do
+      begin
+        try
+          ReadCmd := TReadCommand.Create( Command.Files[i] );
+          if not Model.Execute( ReadCmd as ICommand ) then
+            raise Exception.Create( ReadCmd.ExceptionMsg )
+          else
+          begin
+            SignInfo := Sign( hProv, KeyInfo.KeyType, MergeBuffer(
+              Pointer( @Command.Files[i][1] ),
+              Length( Command.Files[i] ), Pointer( @ReadCmd.Buffer[0] ),
+              Length( ReadCmd.Buffer ) ) );
+            CreateSignCmd := TCreateSignCommand.Create( Command.Files[i] );
+            CreateSignCmd.SignContext.CSPName := CSPName;
+            CreateSignCmd.SignContext.AlgId := AlgId;
+            CreateSignCmd.SignContext.DateTime := SignInfo.DateTime;
+            CreateSignCmd.SignContext.Sign := SignInfo.Sign;
+            CreateSignCmd.SignContext.Certificates := ChainCerts;
+            if not Model.Execute( CreateSignCmd as ICommand ) then
+              raise Exception.Create( CreateSignCmd.ExceptionMsg );
+            Command.Viewer.AddFile( true, Command.Files[i], MULTI_RESULT_SUCC );
+          end;
+        except
+          on E : Exception do
+          begin
+            Command.Viewer.AddFile( false, Command.Files[i], E.Message );
+            Command.Files.Delete( i );
+            Dec( i )
+          end;
+        end;
+        Inc( i );
+      end;
+    finally
+      Command.Viewer.Hide( MULTI_RESULT_MSG );
+    end;
+  finally
+    if Assigned( KeyInfo.pCert ) then
+      CertFreeCertificateContext( KeyInfo.pCert );
+    if ( hProv <> 0 ) then
+      CryptReleaseContext( hProv, 0 );
   end;
 end;
 

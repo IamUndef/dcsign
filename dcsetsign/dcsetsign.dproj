@@ -59,6 +59,7 @@
     <DCCReference Include="..\common\uCommand.pas" />
     <DCCReference Include="..\common\uICommands.pas" />
     <DCCReference Include="..\common\uIModule.pas" />
+    <DCCReference Include="..\common\uIMultiViewer.pas" />
     <DCCReference Include="..\common\uISignContext.pas" />
     <DCCReference Include="..\common\uSignContext.pas" />
     <DCCReference Include="..\common\uSimpleCommand.pas" />

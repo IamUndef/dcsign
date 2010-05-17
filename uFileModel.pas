@@ -34,7 +34,7 @@ type
 
 implementation
 
-uses Windows, Dialogs, uSignContext;
+uses Windows, uSignContext;
 
 function TFileModel.Execute( const Command: ICommand ) : Boolean;
 begin
@@ -111,7 +111,7 @@ begin
     end;
   finally
     if Assigned( FileStream ) then
-      FileStream.Free;
+      FileStream.Free();
   end;
 end;
 
@@ -142,7 +142,7 @@ begin
     end;
   finally
     if Assigned( FileStream ) then
-      FileStream.Free;
+      FileStream.Free();
   end;
 end;
 
@@ -169,7 +169,7 @@ begin
     FileSetAttr( Directory_ + FileName + SIGN_EXT, {faHidden or} faReadOnly );
   finally
     if Assigned( FileStream ) then
-      FileStream.Free;
+      FileStream.Free();
   end;
 end;
 

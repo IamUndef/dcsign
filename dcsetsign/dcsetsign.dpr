@@ -32,7 +32,8 @@ uses
   uISignContext in '..\common\uISignContext.pas',
   uSelectContainer in 'uSelectContainer.pas' {SelectContainer},
   uSetting in 'uSetting.pas' {Setting},
-  uCommand in '..\common\uCommand.pas';
+  uCommand in '..\common\uCommand.pas',
+  uIMultiViewer in '..\common\uIMultiViewer.pas';
 
 exports
   GetInstance;
