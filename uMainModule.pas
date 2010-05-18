@@ -234,8 +234,27 @@ begin
 end;
 
 procedure TMainModule.aSelectCheckSignExecute(Sender: TObject);
+var
+  Files : TStringList;
+  Item : TListItem;  
 begin
-// MultiCheckSign
+  Enabled := false;
+  Files := NIL;
+  try
+    Files := TStringList.Create();
+    Item := lvFiles.Selected;
+    while ( Item <> NIl ) do
+    begin
+      Files.Add( Item.SubItems[0] );
+      Item := lvFiles.GetNextItem( Item, sdAll, [isSelected] );
+    end;
+    CheckSign.MultiCheckSign( TMultiViewer.Create( CheckSign ) as IMultiViewer,
+      Files );
+  finally
+    Enabled := true;
+    if Assigned( Files ) then
+      Files.Free();
+  end;
 end;
 
 procedure TMainModule.aSelectCheckSignUpdate(Sender: TObject);
@@ -355,19 +374,25 @@ begin
     end;
   end else
   begin
-    Item := lvFiles.Selected;
-    while ( Item <> NIl ) do
-    begin
-      if ( Files.IndexOf( Item.SubItems[0] ) <> - 1 ) then
+    lvFiles.OnSelectItem := NIL;
+    try
+      Item := lvFiles.Selected;
+      while ( Item <> NIl ) do
       begin
-        if ( RefreshType = rtSign ) then
-          Item.ImageIndex := SIGN_IMAGE_INDEX
-        else
-          Item.ImageIndex := UNSIGN_IMAGE_INDEX;
-      end else
-        Item.Selected := false;
-      Item := lvFiles.GetNextItem( Item, sdAll, [isSelected] );
+        if ( Files.IndexOf( Item.SubItems[0] ) <> - 1 ) then
+        begin
+          if ( RefreshType = rtSign ) then
+            Item.ImageIndex := SIGN_IMAGE_INDEX
+          else
+            Item.ImageIndex := UNSIGN_IMAGE_INDEX;
+        end else
+          Item.Selected := false;
+        Item := lvFiles.GetNextItem( Item, sdAll, [isSelected] );
+      end;
+    finally
+      lvFiles.OnSelectItem := lvFilesSelectItem;
     end;
+    aCheckSign.Execute();
   end;
 end;
 

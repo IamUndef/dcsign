@@ -2,11 +2,20 @@ unit uCheckSign;
 
 interface
 
-uses SysUtils, JwaWinCrypt, uIFileModel, uICheckSign;
+uses Classes, SysUtils, JwaWinCrypt, uIFileModel, uIMultiViewer, uICheckSign;
 
 type
 
   TCheckSign = class( TInterfacedObject, ICheckSign )
+    private
+      const
+        ROOT_SYSTEM_STORE = 'ROOT';
+
+        MULTI_RESULT_CAPTION = 'Проверка подписей файлов';
+        MULTI_RESULT_SUCC = 'Действительна';
+        MULTI_RESULT_FAIL = 'Недействительна';
+        MULTI_RESULT_MSG = 'Проверка подписей файлов завершена!';
+
     private
       Model : IFileModel;
       CertSubject_ : String;
@@ -28,7 +37,7 @@ type
       constructor Create( const FileModel : IFileModel );
 
       function SingleCheck( const FileName : String ) : Boolean;
-      //MultiCheckSign
+      procedure MultiCheckSign( const Viewer : IMultiViewer; Files : TStrings );
 
       procedure ViewCertificate( const FileName : String );
 
@@ -93,6 +102,56 @@ begin
   end;
 end;
 
+procedure TCheckSign.MultiCheckSign( const Viewer : IMultiViewer;
+  Files : TStrings );
+var
+  i : Integer;
+  hProv : HCRYPTPROV;
+  Buffer : TBytes;
+  SignContext : ISignContext;
+  pCert : PCCERT_CONTEXT;
+  DateTime : TDateTime;  
+begin
+  hProv := 0;
+  pCert := NIL;
+  Viewer.Show( MULTI_RESULT_CAPTION );
+  try
+    for i := 0 to Files.Count - 1 do
+    begin
+      try
+        try
+          Buffer := Model.Read( Files[i] );
+          SignContext := Model.ReadSign( Files[i] );
+          Buffer := MergeBuffer( Pointer( @Files[i][1] ), Length( Files[i] ),
+            Pointer( @Buffer[0] ),
+            Length( Buffer ) );
+          DateTime := SignContext.DateTime;
+          Buffer := MergeBuffer( Pointer( @Buffer[0] ), Length( Buffer ),
+            Pointer( @DateTime ), SizeOf( TDateTime ) );
+          hProv := InitCSP( SignContext.CSPName );
+          pCert := GetCertificate( SignContext.Certificates[0] );
+          if not Check( hProv, pCert, SignContext.AlgId, Buffer,
+              SignContext.Sign ) then
+            raise Exception.Create( MULTI_RESULT_FAIL );
+          Viewer.AddFile( true, Files[i], MULTI_RESULT_SUCC );
+        finally
+          if Assigned( pCert ) then
+            CertFreeCertificateContext( pCert );
+          if ( hProv <> 0 ) then
+            CryptReleaseContext( hProv, 0 );
+          hProv := 0;
+          pCert := NIL;          
+        end;
+      except
+        on E : Exception do
+          Viewer.AddFile( false, Files[i], E.Message );
+      end;
+    end;
+  finally
+    Viewer.Hide( MULTI_RESULT_MSG );
+  end;
+end;
+
 procedure TCheckSign.ViewCertificate( const FileName : String );
 var
   i : Integer;
@@ -108,7 +167,7 @@ begin
   try
     try
       SignContext := Model.ReadSign( FileName );
-      hRootStore := CertOpenSystemStore ( 0, 'ROOT' );
+      hRootStore := CertOpenSystemStore ( 0, ROOT_SYSTEM_STORE );
       if not Assigned( hRootStore ) then
         raise Exception.Create(
           'Не удалось получить доступ к хранилищу доверенных корневых центров сертификации!' );

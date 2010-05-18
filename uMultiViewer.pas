@@ -14,9 +14,10 @@ type
       constructor Create( const CheckSign : ICheckSign = NIL );
       destructor Destroy(); override;
 
-      procedure Show( Caption : String );
-      procedure Hide( Msg : String );
-      procedure AddFile( IsOk : Boolean; FileName : String; Result : String );
+      procedure Show( const Caption : String );
+      procedure Hide( const Msg : String );
+      procedure AddFile( IsOk : Boolean; const FileName : String;
+        const Result : String );
 
   end;
 
@@ -35,18 +36,18 @@ begin
   inherited;
 end;
 
-procedure TMultiViewer.Show( Caption : String );
+procedure TMultiViewer.Show( const Caption : String );
 begin
   Form.Show( Caption );
 end;
 
-procedure TMultiViewer.Hide( Msg : String );
+procedure TMultiViewer.Hide( const Msg : String );
 begin
   Form.Hide( Msg );
 end;
 
-procedure TMultiViewer.AddFile( IsOk : Boolean; FileName : String;
-  Result : String );
+procedure TMultiViewer.AddFile( IsOk : Boolean; const FileName : String;
+  const Result : String );
 begin
   Form.AddFile( IsOk, FileName, Result );
 end;
