@@ -59,6 +59,7 @@ object MainModule: TMainModule
       MultiSelect = True
       ReadOnly = True
       RowSelect = True
+      PopupMenu = pmMain
       ShowWorkAreas = True
       SmallImages = ilMain
       TabOrder = 0
@@ -151,7 +152,7 @@ object MainModule: TMainModule
     Left = 440
     Top = 56
     Bitmap = {
-      494C01010A005000500010001000FFFFFFFFFF00FFFFFFFFFFFFFFFF424D3600
+      494C01010A005000540010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030
       00000000000000000000000000000000000000000000000000001B81B300187E
       B000167CAE001379AB001076A8000D73A5000B71A300086EA000066C9E00046A
@@ -551,7 +552,8 @@ object MainModule: TMainModule
       FFC100010000FFE0FF8100010000FFC0FE0100000000FF01F00700000000FC01
       C00F00000000C003801F00000000800F803F00000000800F803F00010000003F
       803F00000000003F803F80070000003F807FC0070000003FE0FFF80F0000803F
-      FFFFFE1F0000807FFFFFFFFF8001E0FF}
+      FFFFFE1F0000807FFFFFFFFF8001E0FF00000000000000000000000000000000
+      000000000000}
   end
   object mmMain: TMainMenu
     Images = ilMain
@@ -666,6 +668,23 @@ object MainModule: TMainModule
       Hint = '|'#1055#1072#1088#1072#1084#1077#1090#1088#1099' '#1087#1086#1076#1087#1080#1089#1080
       ImageIndex = 9
       OnExecute = aSettingExecute
+    end
+  end
+  object pmMain: TPopupMenu
+    Images = ilMain
+    Left = 440
+    Top = 120
+    object miViewCertPopup: TMenuItem
+      Action = aViewCert
+    end
+    object miSelectCheckSignPopup: TMenuItem
+      Action = aSelectCheckSign
+    end
+    object miSetSignPopup: TMenuItem
+      Action = aSetSign
+    end
+    object miDelSignPopup: TMenuItem
+      Action = aDelSign
     end
   end
 end

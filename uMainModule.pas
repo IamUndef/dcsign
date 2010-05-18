@@ -46,6 +46,11 @@ type
     miSetting: TMenuItem;
     sbMain: TStatusBar;
     miFileSeparator1: TMenuItem;
+    pmMain: TPopupMenu;
+    miViewCertPopup: TMenuItem;
+    miSelectCheckSignPopup: TMenuItem;
+    miSetSignPopup: TMenuItem;
+    miDelSignPopup: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
