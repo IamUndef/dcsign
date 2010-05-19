@@ -92,6 +92,8 @@ type
     CheckSign : ICheckSign;
     SetSign : IModule;
 
+    procedure GetSelectedFiles( Files : TStrings );
+
   public
     procedure Refresh( Files : TStrings; RefreshType : TRefreshType = rtOpen );
 
@@ -241,19 +243,13 @@ end;
 procedure TMainModule.aSelectCheckSignExecute(Sender: TObject);
 var
   Files : TStringList;
-  Item : TListItem;  
 begin
   Enabled := false;
   Files := NIL;
   try
     Files := TStringList.Create();
-    Item := lvFiles.Selected;
-    while ( Item <> NIl ) do
-    begin
-      Files.Add( Item.SubItems[0] );
-      Item := lvFiles.GetNextItem( Item, sdAll, [isSelected] );
-    end;
-    CheckSign.MultiCheckSign( TMultiViewer.Create( CheckSign ) as IMultiViewer,
+    GetSelectedFiles( Files );
+    CheckSign.MultiCheck( TMultiViewer.Create( CheckSign ) as IMultiViewer,
       Files );
   finally
     Enabled := true;
@@ -272,7 +268,6 @@ procedure TMainModule.aSetSignExecute(Sender: TObject);
 var
   SignCmd : ISignCommand;
   MultiSignCmd : IMultiSignCommand;
-  Item : TListItem; 
 begin
   Enabled := false;
   try
@@ -292,12 +287,7 @@ begin
     else if ( lvFiles.SelCount > 1 ) then
     begin
       MultiSignCmd := TMultiSignCommand.Create();
-      Item := lvFiles.Selected;
-      while ( Item <> NIl ) do
-      begin
-        MultiSignCmd.Files.Add( Item.SubItems[0] );
-        Item := lvFiles.GetNextItem( Item, sdAll, [isSelected] );
-      end;
+      GetSelectedFiles( MultiSignCmd.Files );
       if not SetSign.Execute( MultiSignCmd as ICommand ) then
         MessageDlg( MultiSignCmd.ExceptionMsg,  mtError, [mbOK], 0 )
       else
@@ -315,6 +305,8 @@ begin
 end;
 
 procedure TMainModule.aDelSignExecute(Sender: TObject);
+var
+  Files : TStringList;
 begin
   if ( lvFiles.SelCount = 1 ) then
   begin
@@ -322,14 +314,34 @@ begin
         'Вы действительно хотите удалить подпись?', 'Удаление подписи',
         MB_YESNO + MB_ICONQUESTION + MB_DEFBUTTON2 ) ) then
     begin
-      FileModel.DeleteSign( lvFiles.Items[lvFiles.ItemIndex].SubItems[0] );
+      FileModel.SingleDeleteSign(
+        lvFiles.Items[lvFiles.ItemIndex].SubItems[0] );
       lvFiles.Items[lvFiles.ItemIndex].ImageIndex := UNSIGN_IMAGE_INDEX;
       aCheckSign.Execute();
       MessageDlg( 'Подпись успешно удалена!',  mtInformation, [mbOK], 0 );
     end;
   end
   else if ( lvFiles.SelCount > 1 ) then
-    // MultiDeleteSign
+  begin
+    if ( IDYES = Application.MessageBox(
+        'Вы действительно хотите удалить подписи?', 'Удаление подписей',
+        MB_YESNO + MB_ICONQUESTION + MB_DEFBUTTON2 ) ) then
+    begin
+      Enabled := false;
+      Files := NIL;
+      try
+        Files := TStringList.Create();
+        GetSelectedFiles( Files );
+        FileModel.MultiDeleteSign( TMultiViewer.Create() as IMultiViewer,
+          Files );
+        Refresh( Files, rtDelete );
+      finally
+        Enabled := true;
+        if Assigned( Files ) then
+          Files.Free();
+      end;
+    end;
+  end;
 end;
 
 procedure TMainModule.aDelSignUpdate(Sender: TObject);
@@ -401,4 +413,17 @@ begin
   end;
 end;
 
+procedure TMainModule.GetSelectedFiles( Files : TStrings );
+var
+  Item : TListItem;
+begin
+  Item := lvFiles.Selected;
+  while ( Item <> NIl ) do
+  begin
+    Files.Add( Item.SubItems[0] );
+    Item := lvFiles.GetNextItem( Item, sdAll, [isSelected] );
+  end;
+end;
+
 end.
+

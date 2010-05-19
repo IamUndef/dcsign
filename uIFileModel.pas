@@ -2,7 +2,7 @@ unit uIFileModel;
 
 interface
 
-uses Classes, SysUtils, uISignContext;
+uses Classes, SysUtils, uIMultiViewer, uISignContext;
 
 type
 
@@ -12,7 +12,8 @@ type
     procedure Open( const Directory : String; Files : TStrings );
     function Read( const FileName : String ) : TBytes;
     function ReadSign( const FileName : String ) : ISignContext;
-    procedure DeleteSign( const FileName : String );
+    procedure SingleDeleteSign( const FileName : String );
+    procedure MultiDeleteSign( const Viewer : IMultiViewer; Files : TStrings );
 
   end;
 

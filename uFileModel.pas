@@ -2,8 +2,9 @@ unit uFileModel;
 
 interface
 
-uses Classes, SysUtils, uIFileModel, uIModule, uICommands, uISignContext,
-  uMainModule;
+uses
+  Classes, SysUtils, uIFileModel, uIModule, uICommands, uIMultiViewer,
+  uISignContext;
 
 type
 
@@ -12,6 +13,10 @@ type
       const
         SIGN_EXT = '.sign';
         FILE_SIGN_FLAG = 1;
+
+        MULTI_RESULT_CAPTION = 'Удаление подписей файлов';
+        MULTI_RESULT_SUCC = 'Удалена';
+        MULTI_RESULT_MSG = 'Удаление подписей файлов завершено!';
         
     private
       Directory_ : String;
@@ -27,8 +32,9 @@ type
       procedure Open( const Directory : String; Files : TStrings );
       function Read( const FileName : String ) : TBytes;
       function ReadSign( const FileName : String ) : ISignContext;
-      procedure DeleteSign( const FileName : String );
-      //MultiDeleteSign
+      procedure SingleDeleteSign( const FileName : String );
+      procedure MultiDeleteSign( const Viewer : IMultiViewer;
+        Files : TStrings );
 
   end;
 
@@ -146,12 +152,40 @@ begin
   end;
 end;
 
-procedure TFileModel.DeleteSign( const FileName : String );
+procedure TFileModel.SingleDeleteSign( const FileName : String );
 begin
   FileSetAttr( Directory_ + FileName + SIGN_EXT, 0 );
   if not SysUtils.DeleteFile( Directory_ + FileName + SIGN_EXT ) then
     raise Exception.Create( 'Не удалось удалить файл "' + Directory_ +
       FileName + SIGN_EXT + '"!' );
+end;
+
+procedure TFileModel.MultiDeleteSign( const Viewer : IMultiViewer;
+  Files : TStrings );
+var
+  i : Integer;
+begin
+  Viewer.Show( MULTI_RESULT_CAPTION );
+  try
+    i := 0;
+    while ( i < Files.Count ) do
+    begin
+      try
+        SingleDeleteSign( Files[i] );
+        Viewer.AddFile( true, Files[i], MULTI_RESULT_SUCC );
+      except
+        on E : Exception do
+        begin
+          Viewer.AddFile( false, Files[i], E.Message );
+          Files.Delete( i );
+          Dec( i );
+        end;
+      end;
+      Inc( i );
+    end;
+  finally
+    Viewer.Hide( MULTI_RESULT_MSG );
+  end;
 end;
 
 procedure TFileModel.CreateSign( const FileName : String; const Buffer : TBytes );

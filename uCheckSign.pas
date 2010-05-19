@@ -37,7 +37,7 @@ type
       constructor Create( const FileModel : IFileModel );
 
       function SingleCheck( const FileName : String ) : Boolean;
-      procedure MultiCheckSign( const Viewer : IMultiViewer; Files : TStrings );
+      procedure MultiCheck( const Viewer : IMultiViewer; Files : TStrings );
 
       procedure ViewCertificate( const FileName : String );
 
@@ -102,7 +102,7 @@ begin
   end;
 end;
 
-procedure TCheckSign.MultiCheckSign( const Viewer : IMultiViewer;
+procedure TCheckSign.MultiCheck( const Viewer : IMultiViewer;
   Files : TStrings );
 var
   i : Integer;

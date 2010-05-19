@@ -27,8 +27,6 @@ object MultiViewerForm: TMultiViewerForm
     Align = alClient
     Caption = #1056#1077#1079#1091#1083#1100#1090#1072#1090#1099
     TabOrder = 0
-    ExplicitTop = 34
-    ExplicitHeight = 426
     object lvResult: TListView
       AlignWithMargins = True
       Left = 5
@@ -44,14 +42,14 @@ object MultiViewerForm: TMultiViewerForm
           Width = 30
         end
         item
+          AutoSize = True
           Caption = #1048#1084#1103' '#1092#1072#1081#1083#1072
-          MaxWidth = 200
-          MinWidth = 200
-          Width = 200
         end
         item
-          AutoSize = True
           Caption = #1056#1077#1079#1091#1083#1100#1090#1072#1090
+          MaxWidth = 250
+          MinWidth = 250
+          Width = 250
         end>
       FlatScrollBars = True
       ReadOnly = True
@@ -60,7 +58,6 @@ object MultiViewerForm: TMultiViewerForm
       SmallImages = ilMain
       TabOrder = 0
       ViewStyle = vsReport
-      ExplicitHeight = 400
     end
   end
   object tbMain: TToolBar
@@ -74,7 +71,6 @@ object MultiViewerForm: TMultiViewerForm
     ParentShowHint = False
     ShowHint = True
     TabOrder = 1
-    ExplicitWidth = 486
     object tbClose: TToolButton
       Left = 0
       Top = 0
@@ -90,7 +86,7 @@ object MultiViewerForm: TMultiViewerForm
     Left = 440
     Top = 88
     Bitmap = {
-      494C010104002000280010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C0101040020002C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002000000001002000000000000020
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
