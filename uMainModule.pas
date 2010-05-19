@@ -180,13 +180,38 @@ begin
 end;
 
 procedure TMainModule.aOpenAndCheckSignExecute(Sender: TObject);
+var
+  i : Integer;
 begin
-//
+  aOpen.Execute();
+  lvFiles.OnSelectItem := NIL;
+  try
+    for i := 0 to lvFiles.Items.Count - 1 do
+      if ( lvFiles.Items[i].ImageIndex = SIGN_IMAGE_INDEX ) then
+        lvFiles.Items[i].Selected := true;
+  finally
+    lvFiles.OnSelectItem := lvFilesSelectItem;
+  end;
+  if ( lvFiles.SelCount = 1 ) then
+    aCheckSign.Execute()
+  else if ( lvFiles.SelCount > 1 ) then
+    aSelectCheckSign.Execute();
 end;
 
 procedure TMainModule.aOpenAndSetSignExecute(Sender: TObject);
+var
+  i : Integer;
 begin
-//
+  aOpen.Execute();
+  lvFiles.OnSelectItem := NIL;
+  try
+    for i := 0 to lvFiles.Items.Count - 1 do
+      if ( lvFiles.Items[i].ImageIndex = UNSIGN_IMAGE_INDEX ) then
+        lvFiles.Items[i].Selected := true;
+  finally
+    lvFiles.OnSelectItem := lvFilesSelectItem;
+  end;
+  aSetSign.Execute();
 end;
 
 procedure TMainModule.aExitExecute(Sender: TObject);

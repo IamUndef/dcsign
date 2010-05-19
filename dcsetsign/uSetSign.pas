@@ -17,7 +17,6 @@ type
         SIGN_SECTION = 'SIGN';
         CSP_KEY = 'CSP';
         ALGID_KEY = 'AlgId';
-        CONTAINER_KEY = 'Container';
 
         MULTI_RESULT_CAPTION = 'Подпись файлов';
         MULTI_RESULT_MSG = 'Подпись файлов завершена!';
@@ -171,13 +170,9 @@ begin
           SettingFile.ReadString( SIGN_SECTION, CSP_KEY, DEFAULT_CSP );
         AlgId :=
           SettingFile.ReadInteger( SIGN_SECTION, ALGID_KEY, DEFAULT_ALGID );
-        Container :=
-          SettingFile.ReadString( SIGN_SECTION, CONTAINER_KEY,
-            DEFAULT_CONTAINER );
       except
         CSPName := DEFAULT_CSP;
         AlgId := DEFAULT_ALGID;
-        Container := DEFAULT_CONTAINER;
         MessageDlg( 'Не удалось загрузить параметры подписи из файла "' +
           ExtractFilePath( AppFileName ) + SETTING_FILE + '"!', mtError, [mbOK],
           0 );
@@ -204,7 +199,6 @@ begin
           ExtractFilePath( AppFileName ) + SETTING_FILE );
         SettingFile.WriteString( SIGN_SECTION, CSP_KEY, CSPName );
         SettingFile.WriteInteger( SIGN_SECTION, ALGID_KEY, AlgId );
-        SettingFile.WriteString( SIGN_SECTION, CONTAINER_KEY, Container );
         SettingFile.UpdateFile;
       except
         MessageDlg( 'Не удалось cохранить параметры подписи в файл "' +
