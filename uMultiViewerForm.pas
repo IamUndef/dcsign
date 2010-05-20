@@ -125,6 +125,8 @@ begin
     Item.StateIndex := 0
   else
     Item.StateIndex := 1;
+  lvResult.ItemIndex := lvResult.Items.Count - 1;
+  lvResult.Items[lvResult.ItemIndex].MakeVisible( false );
   Application.ProcessMessages();
 end;
 
