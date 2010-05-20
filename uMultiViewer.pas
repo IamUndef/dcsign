@@ -2,7 +2,7 @@ unit uMultiViewer;
 
 interface
 
-uses uIMultiViewer, uICheckSign, uMultiViewerForm;
+uses uIMultiViewer, uICheckSign, uMultiViewerForm, uFileIconList;
 
 type
 
@@ -11,7 +11,8 @@ type
       Form : TMultiViewerForm;
 
     public
-      constructor Create( const CheckSign : ICheckSign = NIL );
+      constructor Create( FileIconList : TFileIconList;
+        const CheckSign : ICheckSign = NIL );
       destructor Destroy(); override;
 
       procedure Show( const Caption : String );
@@ -23,10 +24,11 @@ type
 
 implementation
 
-constructor TMultiViewer.Create( const CheckSign: ICheckSign = NIL );
+constructor TMultiViewer.Create( FileIconList : TFileIconList;
+  const CheckSign: ICheckSign = NIL );
 begin
   inherited Create();
-  Form := TMultiViewerForm.Create( CheckSign );
+  Form := TMultiViewerForm.Create( FileIconList, CheckSign );
 end;
 
 destructor TMultiViewer.Destroy();

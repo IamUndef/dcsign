@@ -19,7 +19,7 @@ type
       function GetFiles() : TStrings;
 
     public
-      constructor Create();
+      constructor Create( const Viewer : IMultiViewer );
       destructor Destroy(); override;
 
       property Viewer : IMultiViewer read GetViewer;
@@ -34,14 +34,14 @@ implementation
 
 uses uMultiViewer;
 
-constructor TMultiSignCommand.Create();
+constructor TMultiSignCommand.Create( const Viewer : IMultiViewer );
 begin
-  inherited;
-  Viewer_ := TMultiViewer.Create();
+  inherited Create();
+  Viewer_ := Viewer;
   Files_ := NIL;
 end;
 
-destructor TMultiSignCommand.Destroy;
+destructor TMultiSignCommand.Destroy();
 begin
   if Assigned( Files_ ) then
     Files_.Free();

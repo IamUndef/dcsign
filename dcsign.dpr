@@ -26,7 +26,8 @@ uses
   uCommand in 'common\uCommand.pas',
   uMultiViewerForm in 'uMultiViewerForm.pas' {MultiViewerForm},
   uIMultiViewer in 'common\uIMultiViewer.pas',
-  uMultiViewer in 'uMultiViewer.pas';
+  uMultiViewer in 'uMultiViewer.pas',
+  uFileIconList in 'uFileIconList.pas';
 
 {$R *.res}
 

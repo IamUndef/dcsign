@@ -92,7 +92,7 @@ begin
   LoadSetting();
 end;
 
-destructor TSetSign.Destroy;
+destructor TSetSign.Destroy();
 begin
   SaveSetting();
   inherited;

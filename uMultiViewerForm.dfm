@@ -37,13 +37,8 @@ object MultiViewerForm: TMultiViewerForm
       Align = alClient
       Columns = <
         item
-          MaxWidth = 30
-          MinWidth = 30
-          Width = 30
-        end
-        item
           AutoSize = True
-          Caption = #1048#1084#1103' '#1092#1072#1081#1083#1072
+          Caption = #1048#1084#1103
         end
         item
           Caption = #1056#1077#1079#1091#1083#1100#1090#1072#1090
@@ -54,8 +49,7 @@ object MultiViewerForm: TMultiViewerForm
       FlatScrollBars = True
       ReadOnly = True
       RowSelect = True
-      ShowWorkAreas = True
-      SmallImages = ilMain
+      StateImages = ilMain
       TabOrder = 0
       ViewStyle = vsReport
     end
@@ -86,7 +80,7 @@ object MultiViewerForm: TMultiViewerForm
     Left = 440
     Top = 88
     Bitmap = {
-      494C0101040020002C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010104002000380010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002000000001002000000000000020
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

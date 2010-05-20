@@ -26,6 +26,9 @@ type
 
       procedure CreateSign( const FileName : String; const Buffer : TBytes );
 
+    protected
+      function GetDirectory() : String;
+
     public
       function Execute( const Command  : ICommand ) : Boolean; overload;
 
@@ -35,6 +38,8 @@ type
       procedure SingleDeleteSign( const FileName : String );
       procedure MultiDeleteSign( const Viewer : IMultiViewer;
         Files : TStrings );
+
+      property Directory : String read GetDirectory;
 
   end;
 
@@ -205,6 +210,11 @@ begin
     if Assigned( FileStream ) then
       FileStream.Free();
   end;
+end;
+
+function TFileModel.GetDirectory() : String;
+begin
+  Result := Directory_;
 end;
 
 end.

@@ -46,22 +46,15 @@ object MainModule: TMainModule
       Align = alClient
       Columns = <
         item
-          ImageIndex = 3
-          MaxWidth = 30
-          MinWidth = 30
-          Width = 30
-        end
-        item
           AutoSize = True
-          Caption = #1048#1084#1103' '#1092#1072#1081#1083#1072
+          Caption = #1048#1084#1103
         end>
       FlatScrollBars = True
       MultiSelect = True
       ReadOnly = True
       RowSelect = True
       PopupMenu = pmMain
-      ShowWorkAreas = True
-      SmallImages = ilMain
+      StateImages = ilMain
       TabOrder = 0
       ViewStyle = vsReport
       OnSelectItem = lvFilesSelectItem
@@ -152,7 +145,7 @@ object MainModule: TMainModule
     Left = 440
     Top = 56
     Bitmap = {
-      494C01010A005000540010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010A005000680010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030
       00000000000000000000000000000000000000000000000000001B81B300187E
       B000167CAE001379AB001076A8000D73A5000B71A300086EA000066C9E00046A
