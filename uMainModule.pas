@@ -71,6 +71,7 @@ type
     procedure aSettingExecute(Sender: TObject);
     procedure lvFilesSelectItem(Sender: TObject; Item: TListItem;
       Selected: Boolean);
+    procedure lvFilesDblClick(Sender: TObject);
 
   private
     const
@@ -108,8 +109,8 @@ implementation
 {$R *.dfm}
 
 uses
-  FileCtrl, uICommands, uIMultiViewer, uFileModel, uCheckSign, uCommands,
-  uMultiViewer;
+  FileCtrl, ShellAPI, uICommands, uIMultiViewer, uFileModel, uCheckSign,
+  uCommands, uMultiViewer;
 
 procedure TMainModule.FormCreate(Sender: TObject);
 
@@ -401,6 +402,17 @@ begin
       Item.Selected := false;
   end else if ( Item.StateIndex = SIGN_IMAGE_INDEX ) then
     aCheckSign.Execute();
+end;
+
+procedure TMainModule.lvFilesDblClick(Sender: TObject);
+begin
+  if ( lvFiles.ItemIndex <> -1 ) then
+  begin
+    if ( ShellExecute( Handle, 'open', PChar( FileModel.Directory +
+        lvFiles.Items[lvFiles.ItemIndex].Caption ),
+        NIL, NIL, SW_SHOWNORMAL ) < 32 ) then
+      MessageDlg('Этот файл не удалось открыть!',  mtError, [mbOK], 0);
+  end;
 end;
 
 procedure TMainModule.Refresh( Files: TStrings;
