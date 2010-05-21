@@ -33,7 +33,7 @@ type
     miOpen: TMenuItem;
     aViewCert: TAction;
     miViewCert: TMenuItem;
-    miSignSeparator: TMenuItem;
+    miSignSeparator1: TMenuItem;
     aSelectCheckSign: TAction;
     miCheckSign: TMenuItem;
     aDelSign: TAction;
@@ -51,6 +51,9 @@ type
     miSelectCheckSignPopup: TMenuItem;
     miSetSignPopup: TMenuItem;
     miDelSignPopup: TMenuItem;
+    aChangeContainer: TAction;
+    miChangeContainer: TMenuItem;
+    miSignSeparator2: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -68,6 +71,7 @@ type
     procedure aSetSignUpdate(Sender: TObject);
     procedure aDelSignExecute(Sender: TObject);
     procedure aDelSignUpdate(Sender: TObject);
+    procedure aChangeContainerExecute(Sender: TObject);
     procedure aSettingExecute(Sender: TObject);
     procedure lvFilesSelectItem(Sender: TObject; Item: TListItem;
       Selected: Boolean);
@@ -160,9 +164,11 @@ begin
   if not Assigned( SetSign ) then
   begin
     aOpenAndSetSign.Visible := false;
-    miSignSeparator.Visible := false;
+    miSignSeparator1.Visible := false;
+    miSignSeparator2.Visible := false;
     aSetSign.Visible := false;
     aDelSign.Visible := false;
+    aChangeContainer.Visible := false;
     aSetting.Visible := false;
   end;
 end;
@@ -298,17 +304,19 @@ end;
 
 procedure TMainModule.aSetSignExecute(Sender: TObject);
 var
-  SignCmd : ISignCommand;
-  MultiSignCmd : IMultiSignCommand;
+  Cmd : ICommand;
 begin
   Enabled := false;
   try
     if ( lvFiles.SelCount = 1 ) then
     begin
-      SignCmd := TSignCommand.Create(
-        lvFiles.Items[lvFiles.ItemIndex].Caption );
-      if not SetSign.Execute( SignCmd as ICommand ) then
-        MessageDlg( SignCmd.ExceptionMsg,  mtError, [mbOK], 0 )
+      Cmd := TSignCommand.Create(
+        lvFiles.Items[lvFiles.ItemIndex].Caption ) as ICommand;
+      if not SetSign.Execute( Cmd ) then
+      begin
+        if Cmd.IsException then
+          MessageDlg( Cmd.ExceptionMsg,  mtError, [mbOK], 0 );
+      end
       else
       begin
         lvFiles.Items[lvFiles.ItemIndex].StateIndex := SIGN_IMAGE_INDEX;
@@ -318,13 +326,16 @@ begin
     end
     else if ( lvFiles.SelCount > 1 ) then
     begin
-      MultiSignCmd := TMultiSignCommand.Create(
-        TMultiViewer.Create( FileIconList ) as IMultiViewer );
-      GetSelectedFiles( MultiSignCmd.Files );
-      if not SetSign.Execute( MultiSignCmd as ICommand ) then
-        MessageDlg( MultiSignCmd.ExceptionMsg,  mtError, [mbOK], 0 )
+      Cmd := TMultiSignCommand.Create(
+        TMultiViewer.Create( FileIconList ) as IMultiViewer ) as ICommand;
+      GetSelectedFiles( ( Cmd as IMultiSignCommand ).Files );
+      if not SetSign.Execute( Cmd ) then
+      begin
+        if Cmd.IsException then
+          MessageDlg( Cmd.ExceptionMsg,  mtError, [mbOK], 0 );
+      end
       else
-        Refresh( MultiSignCmd.Files, rtSign );
+        Refresh( ( Cmd as IMultiSignCommand ).Files, rtSign );
     end;
   finally
     Enabled := true;
@@ -383,9 +394,22 @@ begin
     ( lvFiles.Items[lvFiles.ItemIndex].StateIndex = SIGN_IMAGE_INDEX );
 end;
 
-procedure TMainModule.aSettingExecute(Sender: TObject);
+procedure TMainModule.aChangeContainerExecute(Sender: TObject);
+var
+  Cmd : ICommand;
 begin
-  SetSign.Execute( TSettingCommand.Create() as ICommand );
+  Cmd := TChangeContainerCommand.Create() as ICommand;
+  if not SetSign.Execute( Cmd ) and Cmd.IsException then
+    MessageDlg( Cmd.ExceptionMsg,  mtError, [mbOK], 0 );
+end;
+
+procedure TMainModule.aSettingExecute(Sender: TObject);
+var
+  Cmd : ICommand;
+begin
+  Cmd := TSettingCommand.Create() as ICommand;
+  if not SetSign.Execute( Cmd ) and Cmd.IsException then
+    MessageDlg( Cmd.ExceptionMsg,  mtError, [mbOK], 0 );  
 end;
 
 procedure TMainModule.lvFilesSelectItem(Sender: TObject; Item: TListItem;
@@ -411,7 +435,7 @@ begin
     if ( ShellExecute( Handle, 'open', PChar( FileModel.Directory +
         lvFiles.Items[lvFiles.ItemIndex].Caption ),
         NIL, NIL, SW_SHOWNORMAL ) < 32 ) then
-      MessageDlg('Этот файл не удалось открыть!',  mtError, [mbOK], 0);
+      MessageDlg( 'Этот файл не удалось открыть!',  mtError, [mbOK], 0 );
   end;
 end;
 

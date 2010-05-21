@@ -37,12 +37,14 @@ end;
 
 function TFileIconList.IndexOf( const FileName: String ) : Integer;
 var
+  Ext : String;
   Index : Integer;
   Icon : TIcon;
   FileInfo: SHFILEINFO;
 begin
   Result := -1;
-  Index := FileExt.IndexOf( ExtractFileExt( FileName ) );
+  Ext := LowerCase( ExtractFileExt( FileName ) );
+  Index := FileExt.IndexOf( Ext );
   if ( Index <> -1 ) then
     Result := Integer( FileExt.Objects[Index] )
   else
@@ -55,13 +57,13 @@ begin
         Icon := TIcon.Create();
         Icon.Handle := FileInfo.hIcon;
         Result := AddIcon( Icon );
-        FileExt.AddObject( ExtractFileExt( FileName ), TObject( Result ) );
+        FileExt.AddObject( Ext, TObject( Result ) );
       end;
     finally
       if Assigned( Icon ) then
         Icon.Free();
     end;
   end;
-end;
+end;                     
 
 end.

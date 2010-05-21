@@ -11,6 +11,7 @@ type
       ExceptionMsg_ : String;
 
     protected
+      function IsException() : Boolean;
       function GetExceptionMsg() : String;
       procedure SetExceptionMsg( Msg : String );
 
@@ -27,6 +28,11 @@ constructor TCommand.Create();
 begin
   inherited;
   ExceptionMsg_ := '';
+end;
+
+function TCommand.IsException() : Boolean;
+begin
+  Result := not ( ExceptionMsg_ = EMPTY_EXCEPTION );
 end;
 
 function TCommand.GetExceptionMsg() : String;

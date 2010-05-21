@@ -27,6 +27,9 @@ type
 
   end;
 
+  TChangeContainerCommand = class( TCommand, IChangeContainerCommand )
+  end;
+
   TSettingCommand = class( TCommand, ISettingCommand )
   end;
 

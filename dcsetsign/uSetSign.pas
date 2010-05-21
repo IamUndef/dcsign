@@ -42,6 +42,7 @@ type
 
       procedure Execute( const Command : ISignCommand ); overload;
       procedure Execute( const Command : IMultiSignCommand ); overload;
+      procedure Execute( const Command : IChangeContainerCommand ); overload;
       procedure Execute( const Command : ISettingCommand ); overload;
 
       procedure LoadSetting();
@@ -106,6 +107,8 @@ begin
       Execute( Command as ISignCommand )
     else if Supports( Command, IMultiSignCommand ) then
       Execute( Command as IMultiSignCommand )
+    else if Supports( Command, IChangeContainerCommand ) then
+      Execute( Command as IChangeContainerCommand )
     else if Supports( Command, ISettingCommand ) then
       Execute( Command as ISettingCommand )
     else
@@ -131,6 +134,53 @@ end;
 procedure TSetSign.Execute( const Command : IMultiSignCommand );
 begin
   MultiSign( Command );
+end;
+
+procedure TSetSign.Execute( const Command : IChangeContainerCommand );
+var
+  hProv : HCRYPTPROV;
+  Index : Integer;
+  ProvType : DWORD;
+  Size : DWORD;
+  Data : String;
+  SelectContainer : TSelectContainer;
+begin
+  hProv := 0;
+  Index := 0;
+  SelectContainer := NIL;
+  while CryptEnumProviders( Index, NIL, 0, ProvType, NIL, Size ) do
+  begin
+    SetLength( Data, Size );
+		if ( CryptEnumProviders( Index, NIL, 0, ProvType, @Data[1], Size ) and
+      ( ( CSPName + #0 ) = Data ) ) then
+      break;
+    Inc( Index );
+  end;
+  try
+    SelectContainer := TSelectContainer.Create( @hProv );
+    repeat
+      if not CryptAcquireContext( hProv, '', PChar( CSPName ), ProvType,
+          CRYPT_VERIFYCONTEXT ) then
+        raise Exception.Create( 'Не удалось инициализировать криптопровайдер - "' +
+          CSPName + '"!' )
+      else
+      begin
+          SelectContainer.Container := Container;
+          SelectContainer.ShowModal();
+          CryptReleaseContext( hProv, 0 );
+          hProv := 0;
+      end;
+    until ( ( mrCancel = SelectContainer.ModalResult ) or
+        CryptAcquireContext( hProv, PChar( SelectContainer.Container ),
+          PChar( CSPName ), ProvType, 0 ) );
+    if ( mrOk = SelectContainer.ModalResult ) then
+      Container := SelectContainer.Container;
+  finally
+    if Assigned( SelectContainer ) then
+      SelectContainer.Free();
+    if ( hProv <> 0 ) then
+      CryptReleaseContext( hProv, 0 );       
+  end;
 end;
 
 procedure TSetSign.Execute( const Command : ISettingCommand );
@@ -218,10 +268,12 @@ var
   ProvType : DWORD;
   Size : DWORD;
   Data : String;
+  CurContainer : String;
   SelectContainer : TSelectContainer;
 begin
   Result := 0;
   Index := 0;
+  CurContainer := Container;
   SelectContainer := NIL;
   while CryptEnumProviders( Index, NIL, 0, ProvType, NIL, Size ) do
   begin
@@ -232,37 +284,40 @@ begin
     Inc( Index );
   end;
   try
-    while ( ( Container = '' ) or
-        not CryptAcquireContext( Result, PChar( Container ), PChar( CSPName ),
-          ProvType, 0 ) ) do
+    while ( ( CurContainer = '' ) or
+        not CryptAcquireContext( Result, PChar( CurContainer ),
+          PChar( CSPName ), ProvType, 0 ) ) do
     begin
       if not CryptAcquireContext( Result, '', PChar( CSPName ), ProvType,
           CRYPT_VERIFYCONTEXT ) then
-        Break
+        raise Exception.Create(
+          'Не удалось инициализировать криптопровайдер - "' + CSPName + '"!' )
       else
       begin
         try
           if not Assigned( SelectContainer ) then
             SelectContainer := TSelectContainer.Create( @Result );
-          SelectContainer.Container := Container;
+          SelectContainer.Container := CurContainer;
           SelectContainer.ShowModal();
           if ( mrCancel = SelectContainer.ModalResult ) then
             Break
           else
-            Container := SelectContainer.Container;
+            CurContainer := SelectContainer.Container; ;
         finally
           CryptReleaseContext( Result, 0 );
           Result := 0;
         end;
       end;
     end;
+    if ( Assigned( SelectContainer ) and
+        ( mrOk = SelectContainer.ModalResult ) ) then
+      Container := CurContainer;
   finally
     if Assigned( SelectContainer ) then
       SelectContainer.Free();
   end;
   if ( Result = 0 ) then
-    raise Exception.Create( 'Не удалось инициализировать криптопровайдер - "' +
-      CSPName + '"!' );
+    raise Exception.Create( EMPTY_EXCEPTION );
 end;
 
 function TSetSign.GetCertificate( hProv : HCRYPTPROV ) : TKeyInfo;
@@ -460,32 +515,29 @@ var
   SignInfo : TSignInfo;
   CreateSignCmd : ICreateSignCommand;
 begin
-  if Assigned( Command.Buffer ) then
-  begin
-    hProv := 0;
-    KeyInfo.pCert := NIL;
-    try
-      hProv := InitCSP();
-      KeyInfo := GetCertificate( hProv );
-      ChainCerts := GetChainCerts( KeyInfo.pCert );
-      SignInfo := Sign( hProv, KeyInfo.KeyType, MergeBuffer(
-        Pointer( @Command.FileName[1] ),
-        Length( Command.FileName ), Pointer( @Command.Buffer[0] ),
-        Length( Command.Buffer ) ) );
-      CreateSignCmd := TCreateSignCommand.Create( Command.FileName );
-      CreateSignCmd.SignContext.CSPName := CSPName;
-      CreateSignCmd.SignContext.AlgId := AlgId;
-      CreateSignCmd.SignContext.DateTime := SignInfo.DateTime;
-      CreateSignCmd.SignContext.Sign := SignInfo.Sign;
-      CreateSignCmd.SignContext.Certificates := ChainCerts;
-      if not Model.Execute( CreateSignCmd as ICommand ) then
-        raise Exception.Create( CreateSignCmd.ExceptionMsg );
-    finally
-      if Assigned( KeyInfo.pCert ) then
-        CertFreeCertificateContext( KeyInfo.pCert );
-      if ( hProv <> 0 ) then
-        CryptReleaseContext( hProv, 0 );
-    end;
+  hProv := 0;
+  KeyInfo.pCert := NIL;
+  try
+    hProv := InitCSP();
+    KeyInfo := GetCertificate( hProv );
+    ChainCerts := GetChainCerts( KeyInfo.pCert );
+    SignInfo := Sign( hProv, KeyInfo.KeyType, MergeBuffer(
+      Pointer( @Command.FileName[1] ),
+      Length( Command.FileName ), Pointer( @Command.Buffer[0] ),
+      Length( Command.Buffer ) ) );
+    CreateSignCmd := TCreateSignCommand.Create( Command.FileName );
+    CreateSignCmd.SignContext.CSPName := CSPName;
+    CreateSignCmd.SignContext.AlgId := AlgId;
+    CreateSignCmd.SignContext.DateTime := SignInfo.DateTime;
+    CreateSignCmd.SignContext.Sign := SignInfo.Sign;
+    CreateSignCmd.SignContext.Certificates := ChainCerts;
+    if not Model.Execute( CreateSignCmd as ICommand ) then
+      raise Exception.Create( CreateSignCmd.ExceptionMsg );
+  finally
+    if Assigned( KeyInfo.pCert ) then
+      CertFreeCertificateContext( KeyInfo.pCert );
+    if ( hProv <> 0 ) then
+      CryptReleaseContext( hProv, 0 );
   end;
 end;
 
@@ -513,23 +565,20 @@ begin
         try
           ReadCmd := TReadCommand.Create( Command.Files[i] );
           if not Model.Execute( ReadCmd as ICommand ) then
-            raise Exception.Create( ReadCmd.ExceptionMsg )
-          else
-          begin
-            SignInfo := Sign( hProv, KeyInfo.KeyType, MergeBuffer(
-              Pointer( @Command.Files[i][1] ),
-              Length( Command.Files[i] ), Pointer( @ReadCmd.Buffer[0] ),
-              Length( ReadCmd.Buffer ) ) );
-            CreateSignCmd := TCreateSignCommand.Create( Command.Files[i] );
-            CreateSignCmd.SignContext.CSPName := CSPName;
-            CreateSignCmd.SignContext.AlgId := AlgId;
-            CreateSignCmd.SignContext.DateTime := SignInfo.DateTime;
-            CreateSignCmd.SignContext.Sign := SignInfo.Sign;
-            CreateSignCmd.SignContext.Certificates := ChainCerts;
-            if not Model.Execute( CreateSignCmd as ICommand ) then
-              raise Exception.Create( CreateSignCmd.ExceptionMsg );
-            Command.Viewer.AddFile( true, Command.Files[i], MULTI_RESULT_SUCC );
-          end;
+            raise Exception.Create( ReadCmd.ExceptionMsg );
+          SignInfo := Sign( hProv, KeyInfo.KeyType, MergeBuffer(
+            Pointer( @Command.Files[i][1] ),
+            Length( Command.Files[i] ), Pointer( @ReadCmd.Buffer[0] ),
+            Length( ReadCmd.Buffer ) ) );
+          CreateSignCmd := TCreateSignCommand.Create( Command.Files[i] );
+          CreateSignCmd.SignContext.CSPName := CSPName;
+          CreateSignCmd.SignContext.AlgId := AlgId;
+          CreateSignCmd.SignContext.DateTime := SignInfo.DateTime;
+          CreateSignCmd.SignContext.Sign := SignInfo.Sign;
+          CreateSignCmd.SignContext.Certificates := ChainCerts;
+          if not Model.Execute( CreateSignCmd as ICommand ) then
+            raise Exception.Create( CreateSignCmd.ExceptionMsg );
+          Command.Viewer.AddFile( true, Command.Files[i], MULTI_RESULT_SUCC );
         except
           on E : Exception do
           begin

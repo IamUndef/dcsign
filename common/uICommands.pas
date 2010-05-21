@@ -4,11 +4,15 @@ interface
 
 uses Classes, SysUtils, uIMultiViewer, uISignContext;
 
+const
+  EMPTY_EXCEPTION = '';
+
 type
 
   ICommand = interface( IInterface )
     ['{44159665-1DCC-438D-8059-ED8EA035C467}']
 
+    function IsException() : Boolean; 
     function GetExceptionMsg() : String;
     procedure SetExceptionMsg( Msg : String );
 
@@ -59,10 +63,13 @@ type
 
   end;
 
+  IChangeContainerCommand = interface( ICommand )
+    ['{E6A3E572-DFE1-4A7E-91B1-F632961821F1}']
+  end;
+
   ISettingCommand = interface( ICommand )
     ['{8F194E24-6925-4810-BC18-866159C3D335}']
   end;
-
 
 implementation
 
