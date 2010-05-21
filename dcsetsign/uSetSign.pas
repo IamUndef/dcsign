@@ -13,6 +13,7 @@ type
         DEFAULT_ALGID = 32798;
         DEFAULT_CONTAINER = '';
 
+        SETTING_DIR = '\dcsign\';
         SETTING_FILE = 'setsign.ini';
         SIGN_SECTION = 'SIGN';
         CSP_KEY = 'CSP';
@@ -21,6 +22,8 @@ type
         MULTI_RESULT_CAPTION = 'Подпись файлов';
         MULTI_RESULT_MSG = 'Подпись файлов завершена!';
         MULTI_RESULT_SUCC = 'Подписан';
+
+        SHGFP_TYPE_CURRENT = 0;
 
     private
       type
@@ -71,7 +74,7 @@ type
 implementation
 
 uses
-  Controls, Dialogs, IniFiles, uIMultiViewer, uCommands, uSetting,
+  Controls, Dialogs, IniFiles, SHFolder, uIMultiViewer, uCommands, uSetting,
   uSelectContainer;
 
 function GetInstance( const FileModel : IModule ) : IModule; export;
@@ -151,7 +154,7 @@ begin
   while CryptEnumProviders( Index, NIL, 0, ProvType, NIL, Size ) do
   begin
     SetLength( Data, Size );
-		if ( CryptEnumProviders( Index, NIL, 0, ProvType, @Data[1], Size ) and
+		if ( CryptEnumProviders( Index, NIL, 0, ProvType, PChar( Data ), Size ) and
       ( ( CSPName + #0 ) = Data ) ) then
       break;
     Inc( Index );
@@ -161,8 +164,8 @@ begin
     repeat
       if not CryptAcquireContext( hProv, '', PChar( CSPName ), ProvType,
           CRYPT_VERIFYCONTEXT ) then
-        raise Exception.Create( 'Не удалось инициализировать криптопровайдер - "' +
-          CSPName + '"!' )
+        raise Exception.Create(
+          'Не удалось инициализировать криптопровайдер - "' + CSPName + '"!' )
       else
       begin
           SelectContainer.Container := Container;
@@ -207,15 +210,30 @@ procedure TSetSign.LoadSetting();
 var
   SettingFile : TMemIniFile;
   AppFileName : String;
+  IsDirFound : Boolean;  
 begin
   SettingFile := NIL;
   SetLength( AppFileName, MAX_PATH );
-  if ( GetModuleFileName( 0, @AppFileName[1], MAX_PATH ) <> 0 ) then
+  {$ifdef RELEASE}
+    IsDirFound := SHGetFolderPath( 0, CSIDL_LOCAL_APPDATA, 0, SHGFP_TYPE_CURRENT,
+      PChar( AppFileName ) ) = 0;
+  {$else}
+    IsDirFound := GetModuleFileName( 0, PChar( AppFileName ), MAX_PATH ) <> 0;
+  {$endif}
+  if  not IsDirFound then
+    MessageDlg( 'Не удалось получить директорию с параметрами!', mtError,
+      [mbOK], 0 )
+  else
   begin
+    {$ifdef RELEASE}
+      AppFileName := PChar( AppFileName );
+      AppFileName := AppFileName + SETTING_DIR;
+    {$else}
+      AppFileName := ExtractFilePath( AppFileName );
+    {$endif}
     try
       try
-        SettingFile := TMemIniFile.Create(
-          ExtractFilePath( AppFileName ) + SETTING_FILE );
+        SettingFile := TMemIniFile.Create( AppFileName + SETTING_FILE );
         CSPName :=
           SettingFile.ReadString( SIGN_SECTION, CSP_KEY, DEFAULT_CSP );
         AlgId :=
@@ -224,8 +242,7 @@ begin
         CSPName := DEFAULT_CSP;
         AlgId := DEFAULT_ALGID;
         MessageDlg( 'Не удалось загрузить параметры подписи из файла "' +
-          ExtractFilePath( AppFileName ) + SETTING_FILE + '"!', mtError, [mbOK],
-          0 );
+          AppFileName + SETTING_FILE + '"!', mtError, [mbOK], 0 );
       end;
     finally
       if Assigned( SettingFile ) then
@@ -238,21 +255,43 @@ procedure TSetSign.SaveSetting();
 var
   SettingFile : TMemIniFile;
   AppFileName : String;
+  IsDirFound : Boolean; 
 begin
   SettingFile := NIL;
   SetLength( AppFileName, MAX_PATH );
-  if ( GetModuleFileName( 0, @AppFileName[1], MAX_PATH ) <> 0 ) then
+  {$ifdef RELEASE}
+    IsDirFound := SHGetFolderPath( 0, CSIDL_LOCAL_APPDATA, 0, SHGFP_TYPE_CURRENT,
+      PChar( AppFileName ) ) = 0;
+  {$else}
+    IsDirFound := GetModuleFileName( 0, PChar( AppFileName ), MAX_PATH ) <> 0;
+  {$endif}
+  if  not IsDirFound then
+    MessageDlg( 'Не удалось получить директорию с параметрами!', mtError,
+      [mbOK], 0 )
+  else
   begin
+    {$ifdef RELEASE}
+      AppFileName := PChar( AppFileName );
+      AppFileName := AppFileName + SETTING_DIR;
+      if ( not DirectoryExists( AppFileName ) and
+          not CreateDir( AppFileName ) ) then
+      begin
+        MessageDlg( 'Не удалось создать директорию "' +
+          AppFileName + '" для сохранения параметров!', mtError, [mbOK], 0 );
+        Exit;
+      end;
+    {$else}
+      AppFileName := ExtractFilePath( AppFileName );
+    {$endif}
     try
       try
-        SettingFile := TMemIniFile.Create(
-          ExtractFilePath( AppFileName ) + SETTING_FILE );
+        SettingFile := TMemIniFile.Create( AppFileName + SETTING_FILE );
         SettingFile.WriteString( SIGN_SECTION, CSP_KEY, CSPName );
         SettingFile.WriteInteger( SIGN_SECTION, ALGID_KEY, AlgId );
         SettingFile.UpdateFile;
       except
         MessageDlg( 'Не удалось cохранить параметры подписи в файл "' +
-          ExtractFilePath( AppFileName ) + SETTING_FILE + '"!', mtError, [mbOK],
+          AppFileName + SETTING_FILE + '"!', mtError, [mbOK],
           0 );
       end;
     finally
@@ -278,7 +317,7 @@ begin
   while CryptEnumProviders( Index, NIL, 0, ProvType, NIL, Size ) do
   begin
     SetLength( Data, Size );
-		if ( CryptEnumProviders( Index, NIL, 0, ProvType, @Data[1], Size ) and
+		if ( CryptEnumProviders( Index, NIL, 0, ProvType, PChar( Data ), Size ) and
       ( ( CSPName + #0 ) = Data ) ) then
       break;
     Inc( Index );

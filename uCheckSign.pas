@@ -246,7 +246,7 @@ begin
   while CryptEnumProviders( Index, NIL, 0, ProvType, NIL, Size ) do
   begin
     SetLength( Data, Size );
-		if ( CryptEnumProviders( Index, NIL, 0, ProvType, @Data[1], Size ) and
+		if ( CryptEnumProviders( Index, NIL, 0, ProvType, PChar( Data ), Size ) and
       ( ( CSPName + #0 ) = Data ) ) then
       break;
     Inc( Index );
@@ -318,7 +318,7 @@ begin
     if ( CertNameToStr( PKCS_7_ASN_ENCODING or X509_ASN_ENCODING,
         @pCert.pCertInfo.Subject,
         CERT_SIMPLE_NAME_STR or CERT_NAME_STR_REVERSE_FLAG,
-        @Result[1], Size ) = 0 ) then
+        PChar( Result ), Size ) = 0 ) then
       Result := '';
   end;
 end;

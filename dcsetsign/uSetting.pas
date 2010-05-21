@@ -65,7 +65,7 @@ begin
   while ( CryptEnumProviders( Index, NIL, 0, ProvType, NIL, Size ) ) do
   begin
     SetLength( Data, Size );
-		if ( CryptEnumProviders( Index, NIL, 0, ProvType, @Data[1], Size ) and
+		if ( CryptEnumProviders( Index, NIL, 0, ProvType, PChar( Data ), Size ) and
         ( Trim( Data ) <> '' ) ) then
       cbCSP.Items.AddObject( Data, TObject( ProvType ) );
     Inc( Index );

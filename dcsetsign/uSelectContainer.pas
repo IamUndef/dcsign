@@ -66,7 +66,8 @@ begin
   begin
     SetLength( Data, Size );
     Flag := CRYPT_FIRST;
-    while CryptGetProvParam( hProv^, PP_ENUMCONTAINERS, @Data[1], Size, Flag ) do
+    while CryptGetProvParam( hProv^, PP_ENUMCONTAINERS, PByte( @Data[1] ), Size,
+        Flag ) do
     begin
       if ( Trim( Data ) <> '' ) then
         cbContainer.Items.Add( Data );

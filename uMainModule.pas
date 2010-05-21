@@ -136,8 +136,8 @@ begin
     begin
       SetSign := GetInstance( FileModel as IModule );
       if not Assigned( SetSign ) then
-        MessageDlg( 'Не удалось инициализировать модуль подписи!',
-          mtError, [mbOK], 0 );
+        MessageDlg( 'Не удалось инициализировать модуль подписи!', mtError,
+          [mbOK], 0 );
     end
     else
       FreeLibrary( SetSignDLL );
@@ -315,13 +315,13 @@ begin
       if not SetSign.Execute( Cmd ) then
       begin
         if Cmd.IsException then
-          MessageDlg( Cmd.ExceptionMsg,  mtError, [mbOK], 0 );
+          MessageDlg( Cmd.ExceptionMsg, mtError, [mbOK], 0 );
       end
       else
       begin
         lvFiles.Items[lvFiles.ItemIndex].StateIndex := SIGN_IMAGE_INDEX;
         aCheckSign.Execute();
-        MessageDlg( 'Файл успешно подписан!',  mtInformation, [mbOK], 0 )
+        MessageDlg( 'Файл успешно подписан!', mtInformation, [mbOK], 0 )
       end;
     end
     else if ( lvFiles.SelCount > 1 ) then
@@ -332,7 +332,7 @@ begin
       if not SetSign.Execute( Cmd ) then
       begin
         if Cmd.IsException then
-          MessageDlg( Cmd.ExceptionMsg,  mtError, [mbOK], 0 );
+          MessageDlg( Cmd.ExceptionMsg, mtError, [mbOK], 0 );
       end
       else
         Refresh( ( Cmd as IMultiSignCommand ).Files, rtSign );
@@ -362,7 +362,7 @@ begin
         lvFiles.Items[lvFiles.ItemIndex].Caption );
       lvFiles.Items[lvFiles.ItemIndex].StateIndex := UNSIGN_IMAGE_INDEX;
       aCheckSign.Execute();
-      MessageDlg( 'Подпись успешно удалена!',  mtInformation, [mbOK], 0 );
+      MessageDlg( 'Подпись успешно удалена!', mtInformation, [mbOK], 0 );
     end;
   end
   else if ( lvFiles.SelCount > 1 ) then
@@ -400,7 +400,7 @@ var
 begin
   Cmd := TChangeContainerCommand.Create() as ICommand;
   if not SetSign.Execute( Cmd ) and Cmd.IsException then
-    MessageDlg( Cmd.ExceptionMsg,  mtError, [mbOK], 0 );
+    MessageDlg( Cmd.ExceptionMsg, mtError, [mbOK], 0 );
 end;
 
 procedure TMainModule.aSettingExecute(Sender: TObject);
@@ -409,7 +409,7 @@ var
 begin
   Cmd := TSettingCommand.Create() as ICommand;
   if not SetSign.Execute( Cmd ) and Cmd.IsException then
-    MessageDlg( Cmd.ExceptionMsg,  mtError, [mbOK], 0 );  
+    MessageDlg( Cmd.ExceptionMsg, mtError, [mbOK], 0 );  
 end;
 
 procedure TMainModule.lvFilesSelectItem(Sender: TObject; Item: TListItem;
@@ -435,7 +435,7 @@ begin
     if ( ShellExecute( Handle, 'open', PChar( FileModel.Directory +
         lvFiles.Items[lvFiles.ItemIndex].Caption ),
         NIL, NIL, SW_SHOWNORMAL ) < 32 ) then
-      MessageDlg( 'Этот файл не удалось открыть!',  mtError, [mbOK], 0 );
+      MessageDlg( 'Этот файл не удалось открыть!', mtError, [mbOK], 0 );
   end;
 end;
 
@@ -445,41 +445,46 @@ var
   i : Integer;
   Item : TListItem;
 begin
-  if ( RefreshType = rtOpen ) then
-  begin
-    lvFiles.Clear;
-    for i := 0 to Files.Count - 1 do
+  lvFiles.Items.BeginUpdate();
+  try
+    if ( RefreshType = rtOpen ) then
     begin
-      Item := lvFiles.Items.Add();
-      Item.Caption := Files.Strings[i];
-      if Assigned( Files.Objects[i] ) then
-        Item.StateIndex := SIGN_IMAGE_INDEX
-      else
-        Item.StateIndex := UNSIGN_IMAGE_INDEX;
-      Item.ImageIndex := FileIconList.IndexOf( FileModel.Directory +
-        Files.Strings[i] )
-    end;
-  end else
-  begin
-    lvFiles.OnSelectItem := NIL;
-    try
-      Item := lvFiles.Selected;
-      while ( Item <> NIl ) do
+      lvFiles.Clear;
+      for i := 0 to Files.Count - 1 do
       begin
-        if ( Files.IndexOf( Item.Caption ) <> - 1 ) then
-        begin
-          if ( RefreshType = rtSign ) then
-            Item.StateIndex := SIGN_IMAGE_INDEX
-          else
-            Item.StateIndex := UNSIGN_IMAGE_INDEX;
-        end else
-          Item.Selected := false;
-        Item := lvFiles.GetNextItem( Item, sdAll, [isSelected] );
+        Item := lvFiles.Items.Add();
+        Item.Caption := Files.Strings[i];
+        if Assigned( Files.Objects[i] ) then
+          Item.StateIndex := SIGN_IMAGE_INDEX
+        else
+          Item.StateIndex := UNSIGN_IMAGE_INDEX;
+        Item.ImageIndex := FileIconList.IndexOf( FileModel.Directory +
+          Files.Strings[i] )
       end;
-    finally
-      lvFiles.OnSelectItem := lvFilesSelectItem;
+    end else
+    begin
+      lvFiles.OnSelectItem := NIL;
+      try
+        Item := lvFiles.Selected;
+        while ( Item <> NIl ) do
+        begin
+          if ( Files.IndexOf( Item.Caption ) <> - 1 ) then
+          begin
+            if ( RefreshType = rtSign ) then
+              Item.StateIndex := SIGN_IMAGE_INDEX
+            else
+              Item.StateIndex := UNSIGN_IMAGE_INDEX;
+          end else
+            Item.Selected := false;
+          Item := lvFiles.GetNextItem( Item, sdAll, [isSelected] );
+        end;
+      finally
+        lvFiles.OnSelectItem := lvFilesSelectItem;
+      end;
+      aCheckSign.Execute();
     end;
-    aCheckSign.Execute();
+  finally
+    lvFiles.Items.EndUpdate();
   end;
 end;
 
