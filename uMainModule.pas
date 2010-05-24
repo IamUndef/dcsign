@@ -54,6 +54,9 @@ type
     aChangeContainer: TAction;
     miChangeContainer: TMenuItem;
     miSignSeparator2: TMenuItem;
+    aAbout: TAction;
+    miHelp: TMenuItem;
+    miAbout: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -73,6 +76,7 @@ type
     procedure aDelSignUpdate(Sender: TObject);
     procedure aChangeContainerExecute(Sender: TObject);
     procedure aSettingExecute(Sender: TObject);
+    procedure aAboutExecute(Sender: TObject);
     procedure lvFilesSelectItem(Sender: TObject; Item: TListItem;
       Selected: Boolean);
     procedure lvFilesDblClick(Sender: TObject);
@@ -121,7 +125,7 @@ implementation
 
 uses
   FileCtrl, ShellAPI, CommCtrl, uICommands, uIMultiViewer, uFileModel,
-  uCheckSign, uCommands, uMultiViewer;
+  uCheckSign, uCommands, uMultiViewer, uAbout;
 
 procedure TMainModule.FormCreate(Sender: TObject);
 
@@ -427,6 +431,11 @@ begin
   Cmd := TSettingCommand.Create() as ICommand;
   if not SetSign.Execute( Cmd ) and Cmd.IsException() then
     MessageDlg( Cmd.ExceptionMsg, mtError, [mbOK], 0 );
+end;
+
+procedure TMainModule.aAboutExecute(Sender: TObject);
+begin
+  About.ShowModal();
 end;
 
 procedure TMainModule.lvFilesSelectItem(Sender: TObject; Item: TListItem;

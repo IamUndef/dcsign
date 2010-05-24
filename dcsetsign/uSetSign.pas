@@ -14,7 +14,7 @@ type
         DEFAULT_CONTAINER = '';
 
         SETTING_DIR = '\dcsign\';
-        SETTING_FILE = 'setsign.ini';
+        SETTING_FILE = 'dcsetsign.ini';
         SIGN_SECTION = 'SIGN';
         CSP_KEY = 'CSP';
         ALGID_KEY = 'AlgId';

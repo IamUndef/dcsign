@@ -70,7 +70,7 @@ begin
   lvResult.SmallImages := FileIconList;
   aViewCert.Visible := Assigned( CheckSign_ );
   ColIndex := 0;
-  ArrowType := HDF_SORTUP;
+  ArrowType := 0;
 end;
 
 procedure TMultiViewerForm.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -99,7 +99,7 @@ begin
     ColIndex := Column.Index;
     ArrowType := HDF_SORTDOWN;
   end;
-  if ( ArrowType = HDF_SORTDOWN ) then
+  if ( ( ArrowType = 0 ) or ( ArrowType = HDF_SORTDOWN ) ) then
     ArrowType := HDF_SORTUP
   else
     ArrowType := HDF_SORTDOWN;
@@ -141,7 +141,6 @@ end;
 procedure TMultiViewerForm.Show( const Caption : String );
 begin
   Self.Caption := Caption;
-  SetColumnArrow( 0, ArrowType );  
   Show();
   Wait();
   Application.ProcessMessages();

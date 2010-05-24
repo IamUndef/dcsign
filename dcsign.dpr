@@ -27,7 +27,8 @@ uses
   uMultiViewerForm in 'uMultiViewerForm.pas' {MultiViewerForm},
   uIMultiViewer in 'common\uIMultiViewer.pas',
   uMultiViewer in 'uMultiViewer.pas',
-  uFileIconList in 'uFileIconList.pas';
+  uFileIconList in 'uFileIconList.pas',
+  uAbout in 'uAbout.pas' {About};
 
 {$R *.res}
 
@@ -35,5 +36,6 @@ begin
   Application.Initialize;
   Application.Title := 'Подпись документов - ГУЗ «ЗабКДЦ»';
   Application.CreateForm(TMainModule, MainModule);
+  Application.CreateForm(TAbout, About);
   Application.Run;
 end.
