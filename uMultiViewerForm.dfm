@@ -49,9 +49,13 @@ object MultiViewerForm: TMultiViewerForm
       FlatScrollBars = True
       ReadOnly = True
       RowSelect = True
+      SortType = stText
       StateImages = ilMain
       TabOrder = 0
       ViewStyle = vsReport
+      OnColumnClick = lvResultColumnClick
+      OnCompare = lvResultCompare
+      OnResize = lvResultResize
     end
   end
   object tbMain: TToolBar
@@ -80,7 +84,7 @@ object MultiViewerForm: TMultiViewerForm
     Left = 440
     Top = 88
     Bitmap = {
-      494C010104002000380010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010104002000480010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002000000001002000000000000020
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

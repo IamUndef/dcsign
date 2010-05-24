@@ -22,6 +22,10 @@ type
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure aCloseExecute(Sender: TObject);
     procedure aViewCertExecute(Sender: TObject);
+    procedure lvResultColumnClick(Sender: TObject; Column: TListColumn);
+    procedure lvResultCompare(Sender: TObject; Item1, Item2: TListItem;
+      Data: Integer; var Compare: Integer);
+    procedure lvResultResize(Sender: TObject);
 
   private
     const
@@ -32,6 +36,11 @@ type
   private
     { Private declarations }
     CheckSign_ : ICheckSign;
+
+    ColIndex : Integer;
+    ArrowType : Integer;
+
+    procedure SetColumnArrow( ColIndex : Integer; ArrowType : Integer );
 
   public
     { Public declarations }
@@ -51,6 +60,8 @@ implementation
 
 {$R *.dfm}
 
+uses CommCtrl;
+
 constructor TMultiViewerForm.Create( FileIconList : TFileIconList;
   const CheckSign: ICheckSign );
 begin
@@ -58,6 +69,8 @@ begin
   CheckSign_ := CheckSign;
   lvResult.SmallImages := FileIconList;
   aViewCert.Visible := Assigned( CheckSign_ );
+  ColIndex := 0;
+  ArrowType := HDF_SORTUP;
 end;
 
 procedure TMultiViewerForm.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -77,6 +90,40 @@ begin
     CheckSign_.ViewCertificate( lvResult.Items[lvResult.ItemIndex].Caption );
 end;
 
+procedure TMultiViewerForm.lvResultColumnClick(Sender: TObject;
+  Column: TListColumn);
+begin
+  if ( ColIndex <> Column.Index ) then
+  begin
+    SetColumnArrow( ColIndex, 0 );
+    ColIndex := Column.Index;
+    ArrowType := HDF_SORTDOWN;
+  end;
+  if ( ArrowType = HDF_SORTDOWN ) then
+    ArrowType := HDF_SORTUP
+  else
+    ArrowType := HDF_SORTDOWN;
+  lvResult.AlphaSort();
+  SetColumnArrow( ColIndex, ArrowType );
+end;
+
+procedure TMultiViewerForm.lvResultCompare(Sender: TObject; Item1,
+  Item2: TListItem; Data: Integer; var Compare: Integer);
+begin
+  if ( ColIndex = 0 ) then
+    Compare := AnsiCompareText( Item1.Caption, Item2.Caption )
+  else
+    Compare := AnsiCompareText( Item1.SubItems[ColIndex - 1],
+      Item2.SubItems[ColIndex - 1] );
+  if ( ArrowType = HDF_SORTDOWN ) then
+    Compare := -Compare;    
+end;
+
+procedure TMultiViewerForm.lvResultResize(Sender: TObject);
+begin
+  SetColumnArrow( ColIndex, ArrowType );
+end;
+
 procedure TMultiViewerForm.Wait( IsOn : Boolean = true );
 var
   Item : TListItem;
@@ -94,6 +141,7 @@ end;
 procedure TMultiViewerForm.Show( const Caption : String );
 begin
   Self.Caption := Caption;
+  SetColumnArrow( 0, ArrowType );  
   Show();
   Wait();
   Application.ProcessMessages();
@@ -128,6 +176,22 @@ begin
   lvResult.ItemIndex := lvResult.Items.Count - 1;
   lvResult.Items[lvResult.ItemIndex].MakeVisible( false );
   Application.ProcessMessages();
+end;
+
+procedure TMultiViewerForm.SetColumnArrow( ColIndex : Integer;
+  ArrowType : Integer );
+var
+ hHeader : HWND;
+ hdItem : THDItem;
+begin
+  ZeroMemory( Pointer( @hdItem ), SizeOf( THDItem ) );
+  hHeader := ListView_GetHeader( lvResult.Handle );
+  hdItem.Mask := HDI_FORMAT;
+  Header_GetItem( hHeader, ColIndex, hdItem );
+  hdItem.fmt := hdItem.fmt and not ( HDF_SORTDOWN or HDF_SORTUP );
+  if ( ArrowType <> 0 ) then
+    hdItem.fmt := hdItem.fmt or ArrowType;
+  Header_SetItem( hHeader, ColIndex, hdItem );  
 end;
 
 end.

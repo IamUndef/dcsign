@@ -44,9 +44,9 @@ type
 
 implementation
 
-uses JwaWinCrypt;
-
 {$R *.dfm}
+
+uses JwaWinCrypt;
 
 procedure TSetting.FormCreate(Sender: TObject);
 begin

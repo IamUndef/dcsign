@@ -76,6 +76,10 @@ type
     procedure lvFilesSelectItem(Sender: TObject; Item: TListItem;
       Selected: Boolean);
     procedure lvFilesDblClick(Sender: TObject);
+    procedure lvFilesColumnClick(Sender: TObject; Column: TListColumn);
+    procedure lvFilesCompare(Sender: TObject; Item1, Item2: TListItem;
+      Data: Integer; var Compare: Integer);
+    procedure lvFilesResize(Sender: TObject);
 
   private
     const
@@ -98,10 +102,13 @@ type
     SetSign : IModule;
     FileIconList : TFileIconList;
 
+    ArrowType : Integer;
+
     procedure GetSelectedFiles( Files : TStrings );
 
   public
     procedure Refresh( Files : TStrings; RefreshType : TRefreshType = rtOpen );
+    procedure SetColumnArrow( ColIndex : Integer; ArrowType : Integer );
 
   end;
 
@@ -113,8 +120,8 @@ implementation
 {$R *.dfm}
 
 uses
-  FileCtrl, ShellAPI, uICommands, uIMultiViewer, uFileModel, uCheckSign,
-  uCommands, uMultiViewer;
+  FileCtrl, ShellAPI, CommCtrl, uICommands, uIMultiViewer, uFileModel,
+  uCheckSign, uCommands, uMultiViewer;
 
 procedure TMainModule.FormCreate(Sender: TObject);
 
@@ -144,6 +151,7 @@ begin
   end;
   FileIconList := TFileIconList.Create( Self );
   lvFiles.SmallImages := FileIconList;
+  ArrowType := HDF_SORTUP;
 end;
 
 procedure TMainModule.FormDestroy(Sender: TObject);
@@ -171,6 +179,7 @@ begin
     aChangeContainer.Visible := false;
     aSetting.Visible := false;
   end;
+  SetColumnArrow( 0, ArrowType );
 end;
 
 procedure TMainModule.aOpenExecute(Sender: TObject);
@@ -178,7 +187,8 @@ var
   Dir : String;
   Files : TStringList;
 begin
-  if ( SelectDirectory( 'Выберите папку', '', Dir ) ) then
+  aOpen.Tag := 0;
+  if SelectDirectory( 'Выберите папку', '', Dir ) then
   begin
     Files := NIL;
     try
@@ -189,6 +199,7 @@ begin
       if Assigned( Files ) then
         Files.Free();
     end;
+    aOpen.Tag := 1;
   end;
 end;
 
@@ -197,18 +208,21 @@ var
   i : Integer;
 begin
   aOpen.Execute();
-  lvFiles.OnSelectItem := NIL;
-  try
-    for i := 0 to lvFiles.Items.Count - 1 do
-      if ( lvFiles.Items[i].StateIndex = SIGN_IMAGE_INDEX ) then
-        lvFiles.Items[i].Selected := true;
-  finally
-    lvFiles.OnSelectItem := lvFilesSelectItem;
+  if ( aOpen.Tag = 1 ) then
+  begin
+    lvFiles.OnSelectItem := NIL;
+    try
+      for i := 0 to lvFiles.Items.Count - 1 do
+        if ( lvFiles.Items[i].StateIndex = SIGN_IMAGE_INDEX ) then
+          lvFiles.Items[i].Selected := true;
+    finally
+     lvFiles.OnSelectItem := lvFilesSelectItem;
+    end;
+    if ( lvFiles.SelCount = 1 ) then
+      aCheckSign.Execute()
+    else if ( lvFiles.SelCount > 1 ) then
+      aSelectCheckSign.Execute();
   end;
-  if ( lvFiles.SelCount = 1 ) then
-    aCheckSign.Execute()
-  else if ( lvFiles.SelCount > 1 ) then
-    aSelectCheckSign.Execute();
 end;
 
 procedure TMainModule.aOpenAndSetSignExecute(Sender: TObject);
@@ -216,15 +230,18 @@ var
   i : Integer;
 begin
   aOpen.Execute();
-  lvFiles.OnSelectItem := NIL;
-  try
-    for i := 0 to lvFiles.Items.Count - 1 do
-      if ( lvFiles.Items[i].StateIndex = UNSIGN_IMAGE_INDEX ) then
-        lvFiles.Items[i].Selected := true;
-  finally
-    lvFiles.OnSelectItem := lvFilesSelectItem;
+  if ( aOpen.Tag = 1 ) then
+  begin
+    lvFiles.OnSelectItem := NIL;
+    try
+      for i := 0 to lvFiles.Items.Count - 1 do
+        if ( lvFiles.Items[i].StateIndex = UNSIGN_IMAGE_INDEX ) then
+          lvFiles.Items[i].Selected := true;
+    finally
+      lvFiles.OnSelectItem := lvFilesSelectItem;
+    end;
+    aSetSign.Execute();
   end;
-  aSetSign.Execute();
 end;
 
 procedure TMainModule.aExitExecute(Sender: TObject);
@@ -314,7 +331,7 @@ begin
         lvFiles.Items[lvFiles.ItemIndex].Caption ) as ICommand;
       if not SetSign.Execute( Cmd ) then
       begin
-        if Cmd.IsException then
+        if Cmd.IsException() then
           MessageDlg( Cmd.ExceptionMsg, mtError, [mbOK], 0 );
       end
       else
@@ -331,7 +348,7 @@ begin
       GetSelectedFiles( ( Cmd as IMultiSignCommand ).Files );
       if not SetSign.Execute( Cmd ) then
       begin
-        if Cmd.IsException then
+        if Cmd.IsException() then
           MessageDlg( Cmd.ExceptionMsg, mtError, [mbOK], 0 );
       end
       else
@@ -399,7 +416,7 @@ var
   Cmd : ICommand;
 begin
   Cmd := TChangeContainerCommand.Create() as ICommand;
-  if not SetSign.Execute( Cmd ) and Cmd.IsException then
+  if not SetSign.Execute( Cmd ) and Cmd.IsException() then
     MessageDlg( Cmd.ExceptionMsg, mtError, [mbOK], 0 );
 end;
 
@@ -408,8 +425,8 @@ var
   Cmd : ICommand;
 begin
   Cmd := TSettingCommand.Create() as ICommand;
-  if not SetSign.Execute( Cmd ) and Cmd.IsException then
-    MessageDlg( Cmd.ExceptionMsg, mtError, [mbOK], 0 );  
+  if not SetSign.Execute( Cmd ) and Cmd.IsException() then
+    MessageDlg( Cmd.ExceptionMsg, mtError, [mbOK], 0 );
 end;
 
 procedure TMainModule.lvFilesSelectItem(Sender: TObject; Item: TListItem;
@@ -439,13 +456,43 @@ begin
   end;
 end;
 
+procedure TMainModule.lvFilesColumnClick(Sender: TObject; Column: TListColumn);
+begin
+  lvFiles.OnSelectItem := NIL;
+  try
+    lvFiles.ClearSelection();
+  finally
+    lvFiles.OnSelectItem := lvFilesSelectItem;
+  end;
+  if ( ArrowType = HDF_SORTDOWN ) then
+    ArrowType := HDF_SORTUP
+  else
+    ArrowType := HDF_SORTDOWN;
+  lvFiles.AlphaSort();
+  SetColumnArrow( 0, ArrowType );
+end;
+
+procedure TMainModule.lvFilesCompare(Sender: TObject; Item1, Item2: TListItem;
+  Data: Integer; var Compare: Integer);
+begin
+  Compare := AnsiCompareText( Item1.Caption, Item2.Caption );
+  if ( ArrowType = HDF_SORTDOWN ) then
+    Compare := -Compare;
+end;
+
+procedure TMainModule.lvFilesResize(Sender: TObject);
+begin
+  SetColumnArrow( 0, ArrowType );
+end;
+
 procedure TMainModule.Refresh( Files: TStrings;
-  RefreshType : TRefreshType = rtOpen  );
+  RefreshType : TRefreshType = rtOpen );
 var
   i : Integer;
   Item : TListItem;
 begin
   lvFiles.Items.BeginUpdate();
+  lvFiles.OnSelectItem := NIL;
   try
     if ( RefreshType = rtOpen ) then
     begin
@@ -463,27 +510,23 @@ begin
       end;
     end else
     begin
-      lvFiles.OnSelectItem := NIL;
-      try
-        Item := lvFiles.Selected;
-        while ( Item <> NIl ) do
+      Item := lvFiles.Selected;
+      while ( Item <> NIl ) do
+      begin
+        if ( Files.IndexOf( Item.Caption ) <> - 1 ) then
         begin
-          if ( Files.IndexOf( Item.Caption ) <> - 1 ) then
-          begin
-            if ( RefreshType = rtSign ) then
-              Item.StateIndex := SIGN_IMAGE_INDEX
-            else
-              Item.StateIndex := UNSIGN_IMAGE_INDEX;
-          end else
-            Item.Selected := false;
-          Item := lvFiles.GetNextItem( Item, sdAll, [isSelected] );
-        end;
-      finally
-        lvFiles.OnSelectItem := lvFilesSelectItem;
+          if ( RefreshType = rtSign ) then
+            Item.StateIndex := SIGN_IMAGE_INDEX
+          else
+            Item.StateIndex := UNSIGN_IMAGE_INDEX;
+        end else
+          Item.Selected := false;
+        Item := lvFiles.GetNextItem( Item, sdAll, [isSelected] );
       end;
       aCheckSign.Execute();
     end;
   finally
+    lvFiles.OnSelectItem := lvFilesSelectItem;
     lvFiles.Items.EndUpdate();
   end;
 end;
@@ -498,6 +541,21 @@ begin
     Files.Add( Item.Caption );
     Item := lvFiles.GetNextItem( Item, sdAll, [isSelected] );
   end;
+end;
+
+procedure TMainModule.SetColumnArrow( ColIndex : Integer; ArrowType : Integer );
+var
+ hHeader : HWND;
+ hdItem : THDItem;
+begin
+  ZeroMemory( Pointer( @hdItem ), SizeOf( THDItem ) );
+  hHeader := ListView_GetHeader( lvFiles.Handle );
+  hdItem.Mask := HDI_FORMAT;
+  Header_GetItem( hHeader, ColIndex, hdItem );
+  hdItem.fmt := hdItem.fmt and not ( HDF_SORTDOWN or HDF_SORTUP );
+  if ( ArrowType <> 0 ) then
+    hdItem.fmt := hdItem.fmt or ArrowType;
+  Header_SetItem( hHeader, ColIndex, hdItem );  
 end;
 
 end.

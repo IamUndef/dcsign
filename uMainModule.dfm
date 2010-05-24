@@ -54,10 +54,14 @@ object MainModule: TMainModule
       ReadOnly = True
       RowSelect = True
       PopupMenu = pmMain
+      SortType = stText
       StateImages = ilMain
       TabOrder = 0
       ViewStyle = vsReport
+      OnColumnClick = lvFilesColumnClick
+      OnCompare = lvFilesCompare
       OnDblClick = lvFilesDblClick
+      OnResize = lvFilesResize
       OnSelectItem = lvFilesSelectItem
     end
   end
@@ -146,7 +150,7 @@ object MainModule: TMainModule
     Left = 440
     Top = 56
     Bitmap = {
-      494C01010B007C008C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010B007C00980010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000003000000001002000000000000030
       00000000000000000000000000000000000000000000000000001B81B300187E
       B000167CAE001379AB001076A8000D73A5000B71A300086EA000066C9E00046A
