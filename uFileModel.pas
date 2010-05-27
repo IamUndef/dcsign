@@ -14,10 +14,14 @@ type
         SIGN_EXT = '.sign';
         FILE_SIGN_FLAG = 1;
 
-        MULTI_RESULT_CAPTION = 'Удаление подписей файлов';
-        MULTI_RESULT_SUCC = 'Удалена';
-        MULTI_RESULT_MSG = 'Удаление подписей файлов завершено!';
-        
+        MULTI_DELSIGN_RESULT_CAPTION = 'Удаление подписей файлов';
+        MULTI_DELSIGN_RESULT_SUCC = 'Удалена';
+        MULTI_DELSIGN_RESULT_MSG = 'Удаление подписей файлов завершено!';
+
+        MULTI_COPY_RESULT_CAPTION = 'Копирование подписанных файлов';
+        MULTI_COPY_RESULT_SUCC = 'Скопирован';
+        MULTI_COPY_RESULT_MSG = 'Копирование подписанных файлов завершено!';
+
     private
       Directory_ : String;
 
@@ -37,6 +41,9 @@ type
       function ReadSign( const FileName : String ) : ISignContext;
       procedure SingleDeleteSign( const FileName : String );
       procedure MultiDeleteSign( const Viewer : IMultiViewer;
+        Files : TStrings );
+      procedure SingleCopy( const Dir : String; const FileName : String );
+      procedure MultiCopy( const Viewer : IMultiViewer; const Dir : String;
         Files : TStrings );
 
       property Directory : String read GetDirectory;
@@ -111,8 +118,8 @@ begin
   try
     FileStream := TFileStream.Create( Directory_ + FileName, fmOpenRead );
     if ( FileStream.Size = 0 ) then
-      raise Exception.Create( 'Файл "' + Directory_ + FileName
-        + '" пустой!' );
+      raise Exception.Create( Format( 'Файл "%s" пустой!',
+        [Directory_ + FileName] ) );
     try
       SetLength( Result, FileStream.Size );
       FileStream.ReadBuffer( Result[0], FileStream.Size );
@@ -137,16 +144,16 @@ begin
     FileStream := TFileStream.Create( Directory_ + FileName + SIGN_EXT,
       fmOpenRead );
     if ( FileStream.Size = 0 ) then
-      raise Exception.Create( 'Файл "' + Directory_ + FileName + SIGN_EXT
-        + '" пустой!' );
+      raise Exception.Create( Format( 'Файл "%s" пустой!',
+        [Directory_ + FileName + SIGN_EXT] ) );
     try
       Result := TSignContext.Create;
       SetLength( Buffer, FileStream.Size );
       FileStream.ReadBuffer( Buffer[0], FileStream.Size );
       Result.Buffer := Buffer;
       if not Result.IsValid() then
-        raise Exception.Create( 'В файле "' + Directory_ + FileName + SIGN_EXT
-          + '" некорректные данные!' );  
+        raise Exception.Create( Format( 'В файле "%s" некорректные данные!',
+          [Directory_ + FileName + SIGN_EXT] ) );
     except
       Result := NIL;
       raise;
@@ -161,8 +168,8 @@ procedure TFileModel.SingleDeleteSign( const FileName : String );
 begin
   FileSetAttr( Directory_ + FileName + SIGN_EXT, 0 );
   if not SysUtils.DeleteFile( Directory_ + FileName + SIGN_EXT ) then
-    raise Exception.Create( 'Не удалось удалить файл "' + Directory_ +
-      FileName + SIGN_EXT + '"!' );
+    raise Exception.Create( Format( 'Не удалось удалить файл "%s"!',
+      [Directory_ + FileName + SIGN_EXT] ) );
 end;
 
 procedure TFileModel.MultiDeleteSign( const Viewer : IMultiViewer;
@@ -170,14 +177,14 @@ procedure TFileModel.MultiDeleteSign( const Viewer : IMultiViewer;
 var
   i : Integer;
 begin
-  Viewer.Show( MULTI_RESULT_CAPTION );
+  Viewer.Show( MULTI_DELSIGN_RESULT_CAPTION );
   try
     i := 0;
     while ( i < Files.Count ) do
     begin
       try
         SingleDeleteSign( Files[i] );
-        Viewer.AddFile( true, Files[i], MULTI_RESULT_SUCC );
+        Viewer.AddFile( true, Files[i], MULTI_DELSIGN_RESULT_SUCC );
       except
         on E : Exception do
         begin
@@ -189,7 +196,50 @@ begin
       Inc( i );
     end;
   finally
-    Viewer.Hide( MULTI_RESULT_MSG );
+    Viewer.Hide( MULTI_DELSIGN_RESULT_MSG );
+  end;
+end;
+
+procedure TFileModel.SingleCopy( const Dir : String; const FileName : String );
+var
+  DestDir : String;
+begin
+  DestDir := Dir;
+  if ( DestDir[ Length( DestDir ) ] <> '\' ) then
+    DestDir := DestDir + '\';
+  if not CopyFile( PChar( Directory_ + FileName + SIGN_EXT ),
+      PChar( DestDir + FileName + SIGN_EXT ), true ) then
+    raise Exception.Create( Format( 'Не удалось скопировать файл "%s": %s!',
+      [Directory_ + FileName + SIGN_EXT, SysErrorMessage( GetLastError() )] ) );
+  if not CopyFile( PChar( Directory_ + FileName ), PChar( DestDir + FileName ),
+      true ) then
+    raise Exception.Create( Format( 'Не удалось скопировать файл "%s", %s!',
+      [Directory_ + FileName, SysErrorMessage( GetLastError() )] ) );
+end;
+
+procedure TFileModel.MultiCopy( const Viewer : IMultiViewer; const Dir : String;
+  Files : TStrings );
+var
+  DestDir : String;
+  i : Integer;
+begin
+  DestDir := Dir;
+  if ( DestDir[ Length( DestDir ) ] <> '\' ) then
+    DestDir := DestDir + '\';
+  Viewer.Show( MULTI_COPY_RESULT_CAPTION );
+  try
+    for i := 0 to Files.Count - 1 do
+    begin
+      try
+        SingleCopy( DestDir, Files[i] );
+        Viewer.AddFile( true, Files[i], MULTI_COPY_RESULT_SUCC );
+      except
+        on E : Exception do
+          Viewer.AddFile( false, Files[i], E.Message );
+      end;
+    end;
+  finally           
+    Viewer.Hide( MULTI_COPY_RESULT_MSG );
   end;
 end;
 
@@ -199,8 +249,9 @@ var
 begin
   FileStream := NIL;
   if not Assigned( Buffer ) then
-    raise Exception.Create( 'Данные для записи файла "' + FileName + SIGN_EXT +
-      '" не удалось получить!' );
+    raise Exception.Create( Format(
+      'Не удалось получить данные для создания файла "%s"!',
+      [FileName + SIGN_EXT] ) );
   try
     FileStream := TFileStream.Create( Directory_ + FileName + SIGN_EXT,
       fmCreate );

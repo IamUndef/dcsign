@@ -120,8 +120,9 @@ begin
         CryptReleaseContext( hProv, 0 );
       end;  
     end else
-      MessageDlg( 'Не удалось инициализировать криптопровайдер - "' +
-        cbCSP.Items[cbCSP.ItemIndex] + '"!',  mtError, [mbOK], 0 );
+      MessageDlg( Format( 'Не удалось инициализировать криптопровайдер - "%s"!',
+          [cbCSP.Items[cbCSP.ItemIndex]] ),
+        mtError, [mbOK], 0 );
     if ( cbAlg.Items.Count <> 0 ) then
     begin
       cbAlg.Enabled := true;

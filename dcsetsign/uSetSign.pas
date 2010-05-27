@@ -164,8 +164,8 @@ begin
     repeat
       if not CryptAcquireContext( hProv, '', PChar( CSPName ), ProvType,
           CRYPT_VERIFYCONTEXT ) then
-        raise Exception.Create(
-          'Не удалось инициализировать криптопровайдер - "' + CSPName + '"!' )
+        raise Exception.Create( Format(
+          'Не удалось инициализировать криптопровайдер - "%s"!', [CSPName] ) )
       else
       begin
           SelectContainer.Container := Container;
@@ -209,16 +209,16 @@ end;
 procedure TSetSign.LoadSetting();
 var
   SettingFile : TMemIniFile;
-  AppFileName : String;
+  ConfigDir : String;
   IsDirFound : Boolean;  
 begin
   SettingFile := NIL;
-  SetLength( AppFileName, MAX_PATH );
+  SetLength( ConfigDir, MAX_PATH );
   {$ifdef RELEASE}
-    IsDirFound := SHGetFolderPath( 0, CSIDL_LOCAL_APPDATA, 0, SHGFP_TYPE_CURRENT,
-      PChar( AppFileName ) ) = 0;
+    IsDirFound := SHGetFolderPath( 0, CSIDL_LOCAL_APPDATA, 0,
+      SHGFP_TYPE_CURRENT, PChar( ConfigDir ) ) = 0;
   {$else}
-    IsDirFound := GetModuleFileName( 0, PChar( AppFileName ), MAX_PATH ) <> 0;
+    IsDirFound := GetModuleFileName( 0, PChar( ConfigDir ), MAX_PATH ) <> 0;
   {$endif}
   if  not IsDirFound then
     MessageDlg( 'Не удалось получить директорию с параметрами!', mtError,
@@ -226,14 +226,14 @@ begin
   else
   begin
     {$ifdef RELEASE}
-      AppFileName := PChar( AppFileName );
-      AppFileName := AppFileName + SETTING_DIR;
+      ConfigDir := PChar( ConfigDir );
+      ConfigDir := ConfigDir + SETTING_DIR;
     {$else}
-      AppFileName := ExtractFilePath( AppFileName );
+      ConfigDir := ExtractFilePath( ConfigDir );
     {$endif}
     try
       try
-        SettingFile := TMemIniFile.Create( AppFileName + SETTING_FILE );
+        SettingFile := TMemIniFile.Create( ConfigDir + SETTING_FILE );
         CSPName :=
           SettingFile.ReadString( SIGN_SECTION, CSP_KEY, DEFAULT_CSP );
         AlgId :=
@@ -241,8 +241,10 @@ begin
       except
         CSPName := DEFAULT_CSP;
         AlgId := DEFAULT_ALGID;
-        MessageDlg( 'Не удалось загрузить параметры подписи из файла "' +
-          AppFileName + SETTING_FILE + '"!', mtError, [mbOK], 0 );
+        MessageDlg( Format(
+            'Не удалось загрузить параметры подписи из файла "%s"!',
+            [ConfigDir + SETTING_FILE] ), 
+          mtError, [mbOK], 0 );
       end;
     finally
       if Assigned( SettingFile ) then
@@ -254,16 +256,16 @@ end;
 procedure TSetSign.SaveSetting();
 var
   SettingFile : TMemIniFile;
-  AppFileName : String;
+  ConfigDir : String;
   IsDirFound : Boolean; 
 begin
   SettingFile := NIL;
-  SetLength( AppFileName, MAX_PATH );
+  SetLength( ConfigDir, MAX_PATH );
   {$ifdef RELEASE}
     IsDirFound := SHGetFolderPath( 0, CSIDL_LOCAL_APPDATA, 0, SHGFP_TYPE_CURRENT,
-      PChar( AppFileName ) ) = 0;
+      PChar( ConfigDir ) ) = 0;
   {$else}
-    IsDirFound := GetModuleFileName( 0, PChar( AppFileName ), MAX_PATH ) <> 0;
+    IsDirFound := GetModuleFileName( 0, PChar( ConfigDir ), MAX_PATH ) <> 0;
   {$endif}
   if  not IsDirFound then
     MessageDlg( 'Не удалось получить директорию с параметрами!', mtError,
@@ -271,28 +273,31 @@ begin
   else
   begin
     {$ifdef RELEASE}
-      AppFileName := PChar( AppFileName );
-      AppFileName := AppFileName + SETTING_DIR;
-      if ( not DirectoryExists( AppFileName ) and
-          not CreateDir( AppFileName ) ) then
+      ConfigDir := PChar( ConfigDir );
+      ConfigDir := ConfigDir + SETTING_DIR;
+      if ( not DirectoryExists( ConfigDir ) and
+          not CreateDir( ConfigDir ) ) then
       begin
-        MessageDlg( 'Не удалось создать директорию "' +
-          AppFileName + '" для сохранения параметров!', mtError, [mbOK], 0 );
+        MessageDlg( Format(
+            'Не удалось создать директорию "%s" для сохранения параметров!',
+            [ConfigDir] ),
+           mtError, [mbOK], 0 );
         Exit;
       end;
     {$else}
-      AppFileName := ExtractFilePath( AppFileName );
+      ConfigDir := ExtractFilePath( ConfigDir );
     {$endif}
     try
       try
-        SettingFile := TMemIniFile.Create( AppFileName + SETTING_FILE );
+        SettingFile := TMemIniFile.Create( ConfigDir + SETTING_FILE );
         SettingFile.WriteString( SIGN_SECTION, CSP_KEY, CSPName );
         SettingFile.WriteInteger( SIGN_SECTION, ALGID_KEY, AlgId );
         SettingFile.UpdateFile;
       except
-        MessageDlg( 'Не удалось cохранить параметры подписи в файл "' +
-          AppFileName + SETTING_FILE + '"!', mtError, [mbOK],
-          0 );
+        MessageDlg( Format(
+            'Не удалось cохранить параметры подписи в файл "%s"!',
+            [ConfigDir + SETTING_FILE] ),
+          mtError, [mbOK], 0 );
       end;
     finally
       if Assigned( SettingFile ) then
@@ -329,8 +334,8 @@ begin
     begin
       if not CryptAcquireContext( Result, '', PChar( CSPName ), ProvType,
           CRYPT_VERIFYCONTEXT ) then
-        raise Exception.Create(
-          'Не удалось инициализировать криптопровайдер - "' + CSPName + '"!' )
+        raise Exception.Create( Format(
+          'Не удалось инициализировать криптопровайдер - "%s"!', [CSPName] ) )
       else
       begin
         try
@@ -451,32 +456,32 @@ begin
           // Для сертификатов и цепочек
           CERT_TRUST_NO_ERROR : {ErrorMsg :=  'Сертификат действителен'};
           CERT_TRUST_IS_NOT_TIME_VALID : ErrorMsg :=
-            '"Истек срок действия сертификата пользователя или одиного из сертификатов цепочки"';
+            'Истек срок действия сертификата пользователя или одиного из сертификатов цепочки';
           CERT_TRUST_IS_NOT_TIME_NESTED : ErrorMsg :=
-            '"Сертификаты в цепочке не корректно вложены"';
+            'Сертификаты в цепочке не корректно вложены';
           CERT_TRUST_IS_REVOKED : ErrorMsg :=
-            '"Доверие для сертификата пользователя или для одного из сертификатов цепочки было аннулировано"';
+            'Доверие для сертификата пользователя или для одного из сертификатов цепочки было аннулировано';
           CERT_TRUST_IS_NOT_SIGNATURE_VALID : ErrorMsg :=
-            '"Сертификат пользователя или один из сертификатов цепочки не имеет действительной подписи"';
+            'Сертификат пользователя или один из сертификатов цепочки не имеет действительной подписи';
           CERT_TRUST_IS_NOT_VALID_FOR_USAGE : ErrorMsg :=
-            '"Сертификат пользователя или один из сертификатов цепочки не подходит для предлагаемого использования"';
+            'Сертификат пользователя или один из сертификатов цепочки не подходит для предлагаемого использования';
           CERT_TRUST_IS_UNTRUSTED_ROOT : ErrorMsg :=
-            '"Сертификат корневого центра сертификации отсутствует в хранилище доверенных корневых центров сертификации"';
+            'Сертификат корневого центра сертификации отсутствует в хранилище доверенных корневых центров сертификации';
           CERT_TRUST_REVOCATION_STATUS_UNKNOWN : ErrorMsg :=
-            '"Статус аннулирования сертификата пользователя или одного из сертификатов цепочки неизвестен"';
+            'Статус аннулирования сертификата пользователя или одного из сертификатов цепочки неизвестен';
           CERT_TRUST_IS_CYCLIC : ErrorMsg :=
-            '"Один из сертификатов цепочки выдан центром сертификации, который сертифицирован исходным сертификатом"';
+            'Один из сертификатов цепочки выдан центром сертификации, который сертифицирован исходным сертификатом';
           // Только для цепочек
-          CERT_TRUST_IS_PARTIAL_CHAIN : ErrorMsg := '"Цепочка сертификатов не полная"';
+          CERT_TRUST_IS_PARTIAL_CHAIN : ErrorMsg := 'Цепочка сертификатов не полная';
           CERT_TRUST_CTL_IS_NOT_TIME_VALID : ErrorMsg :=
-            '"У списка доверенных сертификатов, используемого для создания цепочки, истек срок действия"';
+            'У списка доверенных сертификатов, используемого для создания цепочки, истек срок действия';
           CERT_TRUST_CTL_IS_NOT_SIGNATURE_VALID: ErrorMsg :=
-            '"Список доверенных сертификатов, используемый для создания цепочки, не имеет действительной подписи"';
+            'Список доверенных сертификатов, используемый для создания цепочки, не имеет действительной подписи';
           CERT_TRUST_CTL_IS_NOT_VALID_FOR_USAGE: ErrorMsg :=
-            '"Список доверенных сертификатов, используемый для создания цепочки, не подходит для предлагаемого использования"';
+            'Список доверенных сертификатов, используемый для создания цепочки, не подходит для предлагаемого использования';
         else
-          ErrorMsg := 'Код ошибки: 0x'
-            + IntToHex( pChainElement^.TrustStatus.dwErrorStatus, 8 );
+          ErrorMsg := Format( 'Код ошибки 0x%.8x',
+            [pChainElement^.TrustStatus.dwErrorStatus] );
         end;
         if ( ErrorMsg <> '' ) then
           Break;
@@ -484,9 +489,9 @@ begin
       end;
     end;
     if ErrorMsg <> '' then
-      raise Exception.Create(
-        'При проверке подлиности сертификата произошла ошибка: ' + #13#10 +
-        ErrorMsg + '!' );
+      raise Exception.Create( Format(
+        'При проверке подлиности сертификата произошла ошибка: "%s"!',
+        [ErrorMsg] ) );
     SetLength( Result, pChainContext^.rgpChain^.cElement );
     pChainElement := @pChainContext.rgpChain^.rgpElement^;
     for i := 0 to pChainContext.rgpChain^.cElement - 1 do

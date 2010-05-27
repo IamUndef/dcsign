@@ -29,7 +29,7 @@ type
     aExit: TAction;
     miExit: TMenuItem;
     aOpen: TAction;
-    mniFileSeparator2: TMenuItem;
+    miFileSeparator2: TMenuItem;
     miOpen: TMenuItem;
     aViewCert: TAction;
     miViewCert: TMenuItem;
@@ -57,12 +57,19 @@ type
     aAbout: TAction;
     miHelp: TMenuItem;
     miAbout: TMenuItem;
+    aCopy: TAction;
+    miSeparatorPopup: TMenuItem;
+    miCopyPopup: TMenuItem;
+    miFileSeparator3: TMenuItem;
+    miCopy: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure aOpenExecute(Sender: TObject);
-    procedure aOpenAndSetSignExecute(Sender: TObject);
     procedure aOpenAndCheckSignExecute(Sender: TObject);
+    procedure aOpenAndSetSignExecute(Sender: TObject);
+    procedure aCopyExecute(Sender: TObject);
+    procedure aCopyUpdate(Sender: TObject);
     procedure aExitExecute(Sender: TObject);
     procedure aViewCertExecute(Sender: TObject);
     procedure aViewCertUpdate(Sender: TObject);
@@ -89,6 +96,7 @@ type
     const
       SETSIGN_DLL = 'dcsetsign.dll';
       SETSIGN_FUNC = 'GetInstance';
+      DCSIGN_SETUP_EXE = 'dcsignSetup.exe';
 
       UNSIGN_IMAGE_INDEX = -1;
       SIGN_IMAGE_INDEX = 0;
@@ -176,12 +184,15 @@ begin
   if not Assigned( SetSign ) then
   begin
     aOpenAndSetSign.Visible := false;
-    miSignSeparator1.Visible := false;
-    miSignSeparator2.Visible := false;
+    aCopy.Visible := false;
     aSetSign.Visible := false;
     aDelSign.Visible := false;
     aChangeContainer.Visible := false;
     aSetting.Visible := false;
+    miFileSeparator3.Visible := false;
+    miSignSeparator1.Visible := false;
+    miSignSeparator2.Visible := false;
+    miSeparatorPopup.Visible := false;
   end;
   SetColumnArrow( 0, ArrowType );
 end;
@@ -246,6 +257,55 @@ begin
     end;
     aSetSign.Execute();
   end;
+end;
+
+procedure TMainModule.aCopyExecute(Sender: TObject);
+var
+  Dir : String;
+  ErrorMsg : String;
+  Files : TStringList;
+begin
+  if SelectDirectory( 'Выберите папку для копирования', '', Dir,
+      [sdNewUI, sdNewFolder] ) then
+  begin
+    if not CopyFile(
+        PChar( ExtractFilePath( Application.ExeName ) + DCSIGN_SETUP_EXE ),
+        PChar( Dir + '\' + DCSIGN_SETUP_EXE ), false ) then
+    begin
+      ErrorMsg := SysErrorMessage( GetLastError() );
+      MessageDlg( Format(
+          'Не удалось скопировать установочный пакет "%s": %s!',
+          [ExtractFilePath( Application.ExeName ) + DCSIGN_SETUP_EXE,
+            ErrorMsg] ),
+        mtError, [mbOK], 0 );
+    end
+    else
+    begin
+      if ( lvFiles.SelCount = 1 ) then
+      begin
+        FileModel.SingleCopy( Dir, lvFiles.Items[lvFiles.ItemIndex].Caption );
+        MessageDlg( 'Файл успешно скопирован!', mtInformation, [mbOK], 0 );
+      end else if ( lvFiles.SelCount > 1 ) then
+      begin
+        Files := NIL;
+        try
+          Files := TStringList.Create();
+          GetSelectedFiles( Files );
+          FileModel.MultiCopy(
+            TMultiViewer.Create( FileIconList ) as IMultiViewer, Dir, Files );
+        finally
+          if Assigned( Files ) then
+            Files.Free();
+        end;
+      end;
+    end;
+  end;
+end;
+
+procedure TMainModule.aCopyUpdate(Sender: TObject);
+begin
+  aCopy.Enabled := Assigned( SetSign ) and ( lvFiles.SelCount > 0 ) and
+    ( lvFiles.Items[lvFiles.ItemIndex].StateIndex = SIGN_IMAGE_INDEX );
 end;
 
 procedure TMainModule.aExitExecute(Sender: TObject);
@@ -365,7 +425,7 @@ end;
 
 procedure TMainModule.aSetSignUpdate(Sender: TObject);
 begin
-  aSetSign.Enabled := Assigned( SetSign ) and ( lvFiles.SelCount >= 1 ) and
+  aSetSign.Enabled := Assigned( SetSign ) and ( lvFiles.SelCount > 0 ) and
       ( lvFiles.Items[lvFiles.ItemIndex].StateIndex = UNSIGN_IMAGE_INDEX );
 end;
 
@@ -411,7 +471,7 @@ end;
 
 procedure TMainModule.aDelSignUpdate(Sender: TObject);
 begin
-  aDelSign.Enabled := Assigned( SetSign ) and ( lvFiles.SelCount >= 1 ) and
+  aDelSign.Enabled := Assigned( SetSign ) and ( lvFiles.SelCount > 0 ) and
     ( lvFiles.Items[lvFiles.ItemIndex].StateIndex = SIGN_IMAGE_INDEX );
 end;
 
@@ -441,17 +501,12 @@ end;
 procedure TMainModule.lvFilesSelectItem(Sender: TObject; Item: TListItem;
   Selected: Boolean);
 begin
-  if Selected then
-  begin
-    if ( lvFiles.SelCount = 1 ) then
-      lvFiles.Tag := lvFiles.ItemIndex;
-    if ( ( lvFiles.SelCount >= 1 ) and
-        ( Item.StateIndex = lvFiles.Items[lvFiles.Tag].StateIndex ) ) then
-      aCheckSign.Execute()
-    else
-      Item.Selected := false;
-  end else if ( Item.StateIndex = SIGN_IMAGE_INDEX ) then
-    aCheckSign.Execute();
+  if ( Selected and ( lvFiles.SelCount = 1 ) ) then
+    lvFiles.Tag := lvFiles.ItemIndex;
+  if ( Item.StateIndex = lvFiles.Items[lvFiles.Tag].StateIndex ) then
+    aCheckSign.Execute()
+  else if Selected then
+    Item.Selected := false;
 end;
 
 procedure TMainModule.lvFilesDblClick(Sender: TObject);

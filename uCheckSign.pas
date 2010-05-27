@@ -254,8 +254,8 @@ begin
   CryptAcquireContext( Result, '', PChar( CSPName ), ProvType,
     CRYPT_VERIFYCONTEXT );
   if ( Result = 0 ) then
-    raise Exception.Create( 'Не удалось инициализировать криптопровайдер - "' +
-      CSPName + '"!' );
+    raise Exception.Create( Format(
+      'Не удалось инициализировать криптопровайдер - "%s"!', [CSPName] ) );
 end;
 
 function TCheckSign.GetCertificate( const Buffer : TBytes ) : PCCERT_CONTEXT;
